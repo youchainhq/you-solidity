@@ -163,8 +163,8 @@ The address type comes in two flavours, which are largely identical:
  - ``address``: Holds a 20 byte value (size of an Ethereum address).
  - ``address payable``: Same as ``address``, but with the additional members ``transfer`` and ``send``.
 
-The idea behind this distinction is that ``address payable`` is an address you can send Ether to,
-while a plain ``address`` cannot be sent Ether.
+The idea behind this distinction is that ``address payable`` is an address you can send You to,
+while a plain ``address`` cannot be sent You.
 
 Type conversions:
 
@@ -214,7 +214,7 @@ For a quick reference of all members of address, see :ref:`address_related`.
 * ``balance`` and ``transfer``
 
 It is possible to query the balance of an address using the property ``balance``
-and to send Ether (in units of wei) to a payable address using the ``transfer`` function:
+and to send You (in units of lu) to a payable address using the ``transfer`` function:
 
 ::
 
@@ -223,11 +223,11 @@ and to send Ether (in units of wei) to a payable address using the ``transfer`` 
     if (x.balance < 10 && myAddress.balance >= 10) x.transfer(10);
 
 The ``transfer`` function fails if the balance of the current contract is not large enough
-or if the Ether transfer is rejected by the receiving account. The ``transfer`` function
+or if the You transfer is rejected by the receiving account. The ``transfer`` function
 reverts on failure.
 
 .. note::
-    If ``x`` is a contract address, its code (more specifically: its :ref:`fallback-function`, if present) will be executed together with the ``transfer`` call (this is a feature of the EVM and cannot be prevented). If that execution runs out of gas or fails in any way, the Ether transfer will be reverted and the current contract will stop with an exception.
+    If ``x`` is a contract address, its code (more specifically: its :ref:`fallback-function`, if present) will be executed together with the ``transfer`` call (this is a feature of the EVM and cannot be prevented). If that execution runs out of gas or fails in any way, the You transfer will be reverted and the current contract will stop with an exception.
 
 * ``send``
 
@@ -236,7 +236,7 @@ Send is the low-level counterpart of ``transfer``. If the execution fails, the c
 .. warning::
     There are some dangers in using ``send``: The transfer fails if the call stack depth is at 1024
     (this can always be forced by the caller) and it also fails if the recipient runs out of gas. So in order
-    to make safe Ether transfers, always check the return value of ``send``, use ``transfer`` or even better:
+    to make safe You transfers, always check the return value of ``send``, use ``transfer`` or even better:
     use a pattern where the recipient withdraws the money.
 
 * ``call``, ``delegatecall`` and ``staticcall``
@@ -273,13 +273,13 @@ It is possible to adjust the supplied gas with the ``.gas()`` modifier::
 
     address(nameReg).call.gas(1000000)(abi.encodeWithSignature("register(string)", "MyName"));
 
-Similarly, the supplied Ether value can be controlled too::
+Similarly, the supplied You value can be controlled too::
 
-    address(nameReg).call.value(1 ether)(abi.encodeWithSignature("register(string)", "MyName"));
+    address(nameReg).call.value(1 you)(abi.encodeWithSignature("register(string)", "MyName"));
 
 Lastly, these modifiers can be combined. Their order does not matter::
 
-    address(nameReg).call.gas(1000000).value(1 ether)(abi.encodeWithSignature("register(string)", "MyName"));
+    address(nameReg).call.gas(1000000).value(1 you)(abi.encodeWithSignature("register(string)", "MyName"));
 
 In a similar way, the function ``delegatecall`` can be used: the difference is that only the code of the given address is used, all other aspects (storage, balance, ...) are taken from the current contract. The purpose of ``delegatecall`` is to use library code which is stored in another contract. The user has to ensure that the layout of storage in both contracts is suitable for delegatecall to be used.
 
@@ -595,8 +595,8 @@ No other conversions between function types are possible.
 
 The rule about ``payable`` and ``non-payable`` might be a little
 confusing, but in essence, if a function is ``payable``, this means that it
-also accepts a payment of zero Ether, so it also is ``non-payable``.
-On the other hand, a ``non-payable`` function will reject Ether sent to it,
+also accepts a payment of zero You, so it also is ``non-payable``.
+On the other hand, a ``non-payable`` function will reject You sent to it,
 so ``non-payable`` functions cannot be converted to ``payable`` functions.
 
 If a function type variable is not initialised, calling it results
@@ -617,7 +617,7 @@ Public (or external) functions have the following members:
 
 * ``.selector`` returns the :ref:`ABI function selector <abi_function_selector>`
 * ``.gas(uint)`` returns a callable function object which, when called, will send the specified amount of gas to the target function. See :ref:`External Function Calls <external-function-calls>` for more information.
-* ``.value(uint)`` returns a callable function object which, when called, will send the specified amount of wei to the target function. See :ref:`External Function Calls <external-function-calls>` for more information.
+* ``.value(uint)`` returns a callable function object which, when called, will send the specified amount of lu to the target function. See :ref:`External Function Calls <external-function-calls>` for more information.
 
 Example that shows how to use the members::
 

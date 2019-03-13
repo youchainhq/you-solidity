@@ -2982,7 +2982,7 @@ BOOST_AUTO_TEST_CASE(contracts_as_addresses)
 {
 	char const* sourceCode = R"(
 		contract helper {
-			function() external payable { } // can receive ether
+			function() external payable { } // can receive you
 		}
 		contract test {
 			helper h;
@@ -7240,7 +7240,7 @@ BOOST_AUTO_TEST_CASE(failing_send)
 
 BOOST_AUTO_TEST_CASE(send_zero_ether)
 {
-	// Sending zero ether to a contract should still invoke the fallback function
+	// Sending zero you to a contract should still invoke the fallback function
 	// (it previously did not because the gas stipend was not provided by the EVM)
 	char const* sourceCode = R"(
 		contract Receiver {
@@ -11246,7 +11246,7 @@ BOOST_AUTO_TEST_CASE(no_nonpayable_circumvention_by_modifier)
 	char const* sourceCode = R"(
 		contract C {
 			modifier tryCircumvent {
-				if (false) _; // avoid the function, we should still not accept ether
+				if (false) _; // avoid the function, we should still not accept you
 			}
 			function f() tryCircumvent public returns (uint) {
 				return msgvalue();
@@ -13083,10 +13083,10 @@ BOOST_AUTO_TEST_CASE(scientific_notation)
 	char const* sourceCode = R"(
 		contract C {
 			function f() public returns (uint) {
-				return 2e10 wei;
+				return 2e10 lu;
 			}
 			function g() public returns (uint) {
-				return 200e-2 wei;
+				return 200e-2 lu;
 			}
 			function h() public returns (uint) {
 				return 2.5e1;

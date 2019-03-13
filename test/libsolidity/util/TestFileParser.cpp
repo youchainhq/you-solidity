@@ -138,7 +138,7 @@ string TestFileParser::parseFunctionSignature()
 u256 TestFileParser::parseFunctionCallValue()
 {
 	u256 value = convertNumber(parseDecimalNumber());
-	expect(Token::Ether);
+	expect(Token::You);
 	return value;
 }
 
@@ -356,7 +356,7 @@ void TestFileParser::Scanner::scanNextToken()
 	auto detectKeyword = [](std::string const& _literal = "") -> TokenDesc {
 		if (_literal == "true") return TokenDesc{Token::Boolean, _literal};
 		if (_literal == "false") return TokenDesc{Token::Boolean, _literal};
-		if (_literal == "ether") return TokenDesc{Token::Ether, _literal};
+		if (_literal == "you") return TokenDesc{Token::You, _literal};
 		if (_literal == "FAILURE") return TokenDesc{Token::Failure, _literal};
 		return TokenDesc{Token::Identifier, _literal};
 	};

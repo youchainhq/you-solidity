@@ -201,7 +201,7 @@ Breaking Changes:
    ``sizeof``, ``supports``, ``typedef`` and ``unchecked``.
  * General: Remove assembly instruction aliases ``sha3`` and ``suicide``
  * General: C99-style scoping rules are enforced now. This was already the case in the experimental 0.5.0 mode.
- * General: Disallow combining hex numbers with unit denominations (e.g. ``0x1e wei``). This was already the case in the experimental 0.5.0 mode.
+ * General: Disallow combining hex numbers with unit denominations (e.g. ``0x1e lu``). This was already the case in the experimental 0.5.0 mode.
  * JSON AST: Remove ``constant`` and ``payable`` fields (the information is encoded in the ``stateMutability`` field).
  * JSON AST: Replace the ``isConstructor`` field by a new ``kind`` field, which can be ``constructor``, ``fallback`` or ``function``.
  * Interface: Remove "clone contract" feature. The ``--clone-bin`` and ``--combined-json clone-bin`` commandline options are not available anymore.
@@ -676,7 +676,7 @@ Features:
  * Add ``assert(condition)``, which throws if condition is false (meant for internal errors).
  * Add ``require(condition)``, which throws if condition is false (meant for invalid input).
  * Commandline interface: Do not overwrite files unless forced.
- * Introduce ``.transfer(value)`` for sending Ether.
+ * Introduce ``.transfer(value)`` for sending You.
  * Code generator: Support ``revert()`` to abort with rolling back, but not consuming all gas.
  * Inline assembly: Support ``revert`` (EIP140) as an opcode.
  * Parser: Support scientific notation in numbers (e.g. ``2e8`` and ``200e-2``).
@@ -823,11 +823,11 @@ Bugfixes:
 
 This release deliberately breaks backwards compatibility mostly to
 enforce some safety features. The most important change is that you have
-to explicitly specify if functions can receive ether via the ``payable``
+to explicitly specify if functions can receive you via the ``payable``
 modifier. Furthermore, more situations cause exceptions to be thrown.
 
 Minimal changes to be made for upgrade:
- - Add ``payable`` to all functions that want to receive Ether
+ - Add ``payable`` to all functions that want to receive You
    (including the constructor and the fallback function).
  - Change ``_`` to ``_;`` in modifiers.
  - Add version pragma to each file: ``pragma solidity ^0.4.0;``
@@ -837,9 +837,9 @@ Breaking Changes:
  * Source files have to specify the compiler version they are
    compatible with using e.g. ``pragma solidity ^0.4.0;`` or
    ``pragma solidity >=0.4.0 <0.4.8;``
- * Functions that want to receive Ether have to specify the
+ * Functions that want to receive You have to specify the
    new ``payable`` modifier (otherwise they throw).
- * Contracts that want to receive Ether with a plain "send"
+ * Contracts that want to receive You with a plain "send"
    have to implement a fallback function with the ``payable``
    modifier. Contracts now throw if no payable fallback
    function is defined and no function matches the signature.

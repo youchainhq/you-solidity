@@ -1,10 +1,10 @@
 contract c {
     function f() public
     {
-         a = 1 wei;
+         a = 1 lu;
          b = 2 szabo;
          c = 3 finney;
-         b = 4 ether;
+         b = 4 you;
     }
     uint256 a;
     uint256 b;

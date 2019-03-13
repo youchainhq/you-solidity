@@ -85,7 +85,7 @@ of votes.
         function giveRightToVote(address voter) public {
             // If the first argument of `require` evaluates
             // to `false`, execution terminates and all
-            // changes to the state and to Ether balances
+            // changes to the state and to You balances
             // are reverted.
             // This used to consume all gas in old EVM versions, but
             // not anymore.

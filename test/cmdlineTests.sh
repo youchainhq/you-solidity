@@ -185,8 +185,8 @@ function test_solc_assembly_output()
 
 ## RUN
 
-echo "Checking that the bug list is up to date..."
-"$REPO_ROOT"/scripts/update_bugs_by_version.py
+# echo "Checking that the bug list is up to date..."
+# "$REPO_ROOT"/scripts/update_bugs_by_version.py
 
 printTask "Testing unknown options..."
 (

@@ -45,11 +45,11 @@ Create a contract that can be killed and return funds
 
 First, a word of warning: Killing contracts sounds like a good idea, because "cleaning up"
 is always good, but as seen above, it does not really clean up. Furthermore,
-if Ether is sent to removed contracts, the Ether will be forever lost.
+if You is sent to removed contracts, the You will be forever lost.
 
 If you want to deactivate your contracts, it is preferable to **disable** them by changing some
 internal state which causes all functions to throw. This will make it impossible
-to use the contract and ether sent to the contract will be returned automatically.
+to use the contract and you sent to the contract will be returned automatically.
 
 Now to answering the question: Inside a constructor, ``msg.sender`` is the
 creator. Save it. Then ``selfdestruct(creator);`` to kill and return funds.
@@ -235,11 +235,11 @@ Are comments included with deployed contracts and do they increase deployment ga
 No, everything that is not needed for execution is removed during compilation.
 This includes, among others, comments, variable names and type names.
 
-What happens if you send ether along with a function call to a contract?
+What happens if you send you along with a function call to a contract?
 ========================================================================
 
-It gets added to the total balance of the contract, just like when you send ether when creating a contract.
-You can only send ether along to a function that has the ``payable`` modifier,
+It gets added to the total balance of the contract, just like when you send you when creating a contract.
+You can only send you along to a function that has the ``payable`` modifier,
 otherwise an exception is thrown.
 
 Is it possible to get a tx receipt for a transaction executed contract-to-contract?
@@ -247,7 +247,7 @@ Is it possible to get a tx receipt for a transaction executed contract-to-contra
 
 No, a function call from one contract to another does not create its own transaction,
 you have to look in the overall transaction. This is also the reason why several
-block explorer do not show Ether sent between contracts correctly.
+block explorer do not show You sent between contracts correctly.
 
 What is the ``memory`` keyword? What does it do?
 ================================================
@@ -417,7 +417,7 @@ This is a very interesting question. Suppose that we have a contract field set u
 In this case, the mapping of the struct being copied over into the userList is ignored as there is no "list of mapped keys".
 Therefore it is not possible to find out which values should be copied over.
 
-How do I initialize a contract with only a specific amount of wei?
+How do I initialize a contract with only a specific amount of lu?
 ==================================================================
 
 Currently the approach is a little ugly, but there is little that can be done to improve it.
@@ -436,7 +436,7 @@ In this example::
         address child;
 
         function test() public {
-            child = (new B).value(10)(); //construct a new B with 10 wei
+            child = (new B).value(10)(); //construct a new B with 10 lu
         }
     }
 
@@ -557,7 +557,7 @@ individual elements. If you want to return the complete array, you have to
 manually write a function to do that.
 
 
-What could have happened if an account has storage value(s) but no code?  Example: http://test.ether.camp/account/5f740b3a43fbb99724ce93a879805f4dc89178b5
+What could have happened if an account has storage value(s) but no code?  Example: http://test.you.camp/account/5f740b3a43fbb99724ce93a879805f4dc89178b5
 ==========================================================================================================================================================
 
 The last thing a constructor does is returning the code of the contract.

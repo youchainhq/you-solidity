@@ -1499,7 +1499,7 @@ BOOST_AUTO_TEST_CASE(overflow_caused_by_ether_units)
 	char const* sourceCode = R"(
 		contract c {
 			function c () public {
-				 a = 115792089237316195423570985008687907853269984665640564039458 ether;
+				 a = 115792089237316195423570985008687907853269984665640564039458 you;
 			}
 			uint256 a;
 		}

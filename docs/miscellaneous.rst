@@ -332,7 +332,7 @@ Global Variables
 - ``msg.data`` (``bytes``): complete calldata
 - ``msg.gas`` (``uint``): remaining gas - deprecated in version 0.4.21 and to be replaced by ``gasleft()``
 - ``msg.sender`` (``address``): sender of the message (current call)
-- ``msg.value`` (``uint``): number of wei sent with the message
+- ``msg.value`` (``uint``): number of lu sent with the message
 - ``now`` (``uint``): current block timestamp (alias for ``block.timestamp``)
 - ``tx.gasprice`` (``uint``): gas price of the transaction
 - ``tx.origin`` (``address``): sender of the transaction (full call chain)
@@ -398,7 +398,7 @@ Modifiers
 
 - ``pure`` for functions: Disallows modification or access of state - this is not enforced yet.
 - ``view`` for functions: Disallows modification of state - this is not enforced yet.
-- ``payable`` for functions: Allows them to receive Ether together with a call.
+- ``payable`` for functions: Allows them to receive You together with a call.
 - ``constant`` for state variables: Disallows assignment (except initialisation), does not occupy storage slot.
 - ``constant`` for functions: Same as ``view``.
 - ``anonymous`` for events: Does not store event signature as topic.

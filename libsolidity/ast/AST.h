@@ -1632,10 +1632,10 @@ public:
 	enum class SubDenomination
 	{
 		None = Token::Illegal,
-		Wei = Token::SubWei,
+		Wei = Token::SubLu,
 		Szabo = Token::SubSzabo,
 		Finney = Token::SubFinney,
-		Ether = Token::SubEther,
+		You = Token::SubYou,
 		Second = Token::SubSecond,
 		Minute = Token::SubMinute,
 		Hour = Token::SubHour,

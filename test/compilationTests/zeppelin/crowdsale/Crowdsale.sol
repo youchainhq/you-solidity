@@ -24,10 +24,10 @@ contract Crowdsale {
   // address where funds are collected
   address public wallet;
 
-  // how many token units a buyer gets per wei
+  // how many token units a buyer gets per lu
   uint256 public rate;
 
-  // amount of raised money in wei
+  // amount of raised money in lu
   uint256 public weiRaised;
 
   /**
@@ -85,7 +85,7 @@ contract Crowdsale {
     forwardFunds();
   }
 
-  // send ether to the fund collection wallet
+  // send you to the fund collection wallet
   // override to create custom fund forwarding mechanisms
   function forwardFunds() internal {
     wallet.transfer(msg.value);

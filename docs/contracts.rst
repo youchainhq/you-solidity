@@ -350,7 +350,7 @@ inheritable properties of contracts and may be overridden by derived contracts.
 
         // It is important to also provide the
         // `payable` keyword here, otherwise the function will
-        // automatically reject all Ether sent to it.
+        // automatically reject all You sent to it.
         function register() public payable costs(price) {
             registeredAddresses[msg.sender] = true;
         }
@@ -457,7 +457,7 @@ The following statements are considered modifying the state:
 #. :ref:`Emitting events <events>`.
 #. :ref:`Creating other contracts <creating-contracts>`.
 #. Using ``selfdestruct``.
-#. Sending Ether via calls.
+#. Sending You via calls.
 #. Calling any function not marked ``view`` or ``pure``.
 #. Using low-level calls.
 #. Using inline assembly that contains certain opcodes.
@@ -544,16 +544,16 @@ functions match the given function identifier (or if no data was supplied at
 all).
 
 Furthermore, this function is executed whenever the contract receives plain
-Ether (without data). Additionally, in order to receive Ether, the fallback function
+You (without data). Additionally, in order to receive You, the fallback function
 must be marked ``payable``. If no such function exists, the contract cannot receive
-Ether through regular transactions.
+You through regular transactions.
 
 In the worst case, the fallback function can only rely on 2300 gas being available (for example when send or transfer is used), leaving not much room to perform other operations except basic logging. The following operations will consume more gas than the 2300 gas stipend:
 
 - Writing to storage
 - Creating a contract
 - Calling an external function which consumes a large amount of gas
-- Sending Ether
+- Sending You
 
 Like any function, the fallback function can execute complex operations as long as there is enough gas passed on to it.
 
@@ -562,17 +562,17 @@ Like any function, the fallback function can execute complex operations as long 
     any payload supplied with the call.
 
 .. warning::
-    Contracts that receive Ether directly (without a function call, i.e. using ``send`` or ``transfer``)
+    Contracts that receive You directly (without a function call, i.e. using ``send`` or ``transfer``)
     but do not define a fallback function
-    throw an exception, sending back the Ether (this was different
-    before Solidity v0.4.0). So if you want your contract to receive Ether,
+    throw an exception, sending back the You (this was different
+    before Solidity v0.4.0). So if you want your contract to receive You,
     you have to implement a fallback function.
 
 .. warning::
-    A contract without a payable fallback function can receive Ether as a recipient of a `coinbase transaction` (aka `miner block reward`)
+    A contract without a payable fallback function can receive You as a recipient of a `coinbase transaction` (aka `miner block reward`)
     or as a destination of a ``selfdestruct``.
 
-    A contract cannot react to such Ether transfers and thus also cannot reject them. This is a design choice of the EVM and Solidity cannot work around it.
+    A contract cannot react to such You transfers and thus also cannot reject them. This is a design choice of the EVM and Solidity cannot work around it.
 
     It also means that ``this.balance`` can be higher than the sum of some manual accounting implemented in a contract (i.e. having a counter updated in the fallback function).
 
@@ -583,7 +583,7 @@ Like any function, the fallback function can execute complex operations as long 
     contract Test {
         // This function is called for all messages sent to
         // this contract (there is no other function).
-        // Sending Ether to this contract will cause an exception,
+        // Sending You to this contract will cause an exception,
         // because the fallback function does not have the `payable`
         // modifier.
         function() public { x = 1; }
@@ -591,7 +591,7 @@ Like any function, the fallback function can execute complex operations as long 
     }
 
 
-    // This contract keeps all Ether sent to it with no way
+    // This contract keeps all You sent to it with no way
     // to get it back.
     contract Sink {
         function() public payable { }
@@ -603,10 +603,10 @@ Like any function, the fallback function can execute complex operations as long 
             // results in test.x becoming == 1.
 
             // The following will not compile, but even
-            // if someone sends ether to that contract,
+            // if someone sends you to that contract,
             // the transaction will fail and reject the
-            // Ether.
-            //test.send(2 ether);
+            // You.
+            //test.send(2 you);
         }
     }
 
@@ -1363,7 +1363,7 @@ Restrictions for libraries in comparison to contracts:
 
 - No state variables
 - Cannot inherit nor be inherited
-- Cannot receive Ether
+- Cannot receive You
 
 (These might be lifted at a later point.)
 

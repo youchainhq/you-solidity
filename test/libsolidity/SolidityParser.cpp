@@ -791,10 +791,10 @@ BOOST_AUTO_TEST_CASE(literal_constants_with_ether_subdenominations)
 		contract c {
 			function c ()
 			{
-				 a = 1 wei;
+				 a = 1 lu;
 				 b = 2 szabo;
 				 c = 3 finney;
-				 b = 4 ether;
+				 b = 4 you;
 			}
 			uint256 a;
 			uint256 b;
@@ -810,7 +810,7 @@ BOOST_AUTO_TEST_CASE(literal_constants_with_ether_subdenominations_in_expression
 		contract c {
 			function c ()
 			{
-				 a = 1 wei * 100 wei + 7 szabo - 3;
+				 a = 1 lu * 100 lu + 7 szabo - 3;
 			}
 			uint256 a;
 		})";

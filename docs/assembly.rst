@@ -250,11 +250,11 @@ In the grammar, opcodes are represented as pre-defined identifiers.
 +-------------------------+-----+---+-----------------------------------------------------------------+
 | address                 |     | F | address of the current contract / execution context             |
 +-------------------------+-----+---+-----------------------------------------------------------------+
-| balance(a)              |     | F | wei balance at address a                                        |
+| balance(a)              |     | F | lu balance at address a                                        |
 +-------------------------+-----+---+-----------------------------------------------------------------+
 | caller                  |     | F | call sender (excluding ``delegatecall``)                        |
 +-------------------------+-----+---+-----------------------------------------------------------------+
-| callvalue               |     | F | wei sent together with the current call                         |
+| callvalue               |     | F | lu sent together with the current call                         |
 +-------------------------+-----+---+-----------------------------------------------------------------+
 | calldataload(p)         |     | F | call data starting from position p (32 bytes)                   |
 +-------------------------+-----+---+-----------------------------------------------------------------+
@@ -274,15 +274,15 @@ In the grammar, opcodes are represented as pre-defined identifiers.
 +-------------------------+-----+---+-----------------------------------------------------------------+
 | returndatacopy(t, f, s) | `-` | B | copy s bytes from returndata at position f to mem at position t |
 +-------------------------+-----+---+-----------------------------------------------------------------+
-| create(v, p, s)         |     | F | create new contract with code mem[p..(p+s)) and send v wei      |
+| create(v, p, s)         |     | F | create new contract with code mem[p..(p+s)) and send v lu      |
 |                         |     |   | and return the new address                                      |
 +-------------------------+-----+---+-----------------------------------------------------------------+
 | create2(v, n, p, s)     |     | C | create new contract with code mem[p..(p+s)) at address          |
 |                         |     |   | keccak256(<address> . n . keccak256(mem[p..(p+s))) and send v   |
-|                         |     |   | wei and return the new address                                  |
+|                         |     |   | lu and return the new address                                  |
 +-------------------------+-----+---+-----------------------------------------------------------------+
 | call(g, a, v, in,       |     | F | call contract at address a with input mem[in..(in+insize))      |
-| insize, out, outsize)   |     |   | providing g gas and v wei and output area                       |
+| insize, out, outsize)   |     |   | providing g gas and v lu and output area                       |
 |                         |     |   | mem[out..(out+outsize)) returning 0 on error (eg. out of gas)   |
 |                         |     |   | and 1 on success                                                |
 +-------------------------+-----+---+-----------------------------------------------------------------+

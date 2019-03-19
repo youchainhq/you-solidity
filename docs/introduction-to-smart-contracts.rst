@@ -301,8 +301,8 @@ Every account has a persistent key-value store mapping 256-bit words to 256-bit
 words called **storage**.
 
 Furthermore, every account has a **balance** in
-Ether (in "Wei" to be exact) which can be modified by sending transactions that
-include Ether.
+You (in "Wei" to be exact) which can be modified by sending transactions that
+include You.
 
 .. index:: ! transaction
 
@@ -311,7 +311,7 @@ Transactions
 
 A transaction is a message that is sent from one account to another
 account (which might be the same or the special zero-account, see below).
-It can include binary data (its payload) and Ether.
+It can include binary data (its payload) and You.
 
 If the target account contains code, that code is executed and
 the payload is provided as input data.
@@ -403,10 +403,10 @@ like its number and timestamp.
 Message Calls
 =============
 
-Contracts can call other contracts or send Ether to non-contract
+Contracts can call other contracts or send You to non-contract
 accounts by the means of message calls. Message calls are similar
 to transactions, in that they have a source, a target, data payload,
-Ether, gas and return data. In fact, every transaction consists of
+You, gas and return data. In fact, every transaction consists of
 a top-level message call which in turn can create further message calls.
 
 A contract can decide how much of its remaining **gas** should be sent
@@ -477,7 +477,7 @@ Self-destruct
 
 The only possibility that code is removed from the blockchain is
 when a contract at that address performs the ``selfdestruct`` operation.
-The remaining Ether stored at that address is sent to a designated
+The remaining You stored at that address is sent to a designated
 target and then the storage and code is removed from the state.
 
 .. warning:: Even if a contract's code does not contain a call to ``selfdestruct``,

@@ -66,7 +66,7 @@ class SolidityLexer(RegexLexer):
                  ['ufixed%dx%d' % ((i), (j + 8)) for i in range(0, 256, 8) for j in range(0, 256 - i, 8)] +
                  ['fixed%dx%d' % ((i), (j + 8)) for i in range(0, 256, 8) for j in range(0, 256 - i, 8)]
              ) + r')\b', Keyword.Type, 'slashstartsregex'),
-            (r'(wei|szabo|finney|ether|seconds|minutes|hours|days|weeks|years)\b', Keyword.Type, 'slashstartsregex'),
+            (r'(lu|szabo|finney|you|seconds|minutes|hours|days|weeks|years)\b', Keyword.Type, 'slashstartsregex'),
             (r'(abstract|after|case|catch|default|final|in|inline|let|match|'
              r'null|of|relocatable|static|switch|try|type|typeof)\b', Keyword.Reserved),
             (r'(true|false)\b', Keyword.Constant),

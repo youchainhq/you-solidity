@@ -242,12 +242,12 @@ creation-dependencies are not possible.
         }
 
         function createAndEndowD(uint arg, uint amount) public payable {
-            // Send ether along with the creation
+            // Send you along with the creation
             D newD = (new D).value(amount)(arg);
         }
     }
 
-As seen in the example, it is possible to forward Ether while creating
+As seen in the example, it is possible to forward You while creating
 an instance of ``D`` using the ``.value()`` option, but it is not possible
 to limit the amount of gas.
 If the creation fails (due to out-of-stack, not enough balance or other problems),
@@ -510,8 +510,8 @@ A ``require``-style exception is generated in the following situations:
 #. If you call a function via a message call but it does not finish properly (i.e. it runs out of gas, has no matching function, or throws an exception itself), except when a low level operation ``call``, ``send``, ``delegatecall`` or ``callcode`` is used.  The low level operations never throw exceptions but indicate failures by returning ``false``.
 #. If you create a contract using the ``new`` keyword but the contract creation does not finish properly (see above for the definition of "not finish properly").
 #. If you perform an external function call targeting a contract that contains no code.
-#. If your contract receives Ether via a public function without ``payable`` modifier (including the constructor and the fallback function).
-#. If your contract receives Ether via a public getter function.
+#. If your contract receives You via a public function without ``payable`` modifier (including the constructor and the fallback function).
+#. If your contract receives You via a public getter function.
 #. If a ``.transfer()`` fails.
 
 Internally, Solidity performs a revert operation (instruction ``0xfd``) for a ``require``-style exception and executes an invalid operation
@@ -529,19 +529,19 @@ The following example shows how an error string can be used together with revert
 
     contract VendingMachine {
         function buy(uint amount) payable {
-            if (amount > msg.value / 2 ether)
-                revert("Not enough Ether provided.");
+            if (amount > msg.value / 2 you)
+                revert("Not enough You provided.");
             // Alternative way to do it:
             require(
-                amount <= msg.value / 2 ether,
-                "Not enough Ether provided."
+                amount <= msg.value / 2 you,
+                "Not enough You provided."
             );
             // Perform the purchase.
         }
     }
 
 The provided string will be :ref:`abi-encoded <ABI>` as if it were a call to a function ``Error(string)``.
-In the above example, ``revert("Not enough Ether provided.");`` will cause the following hexadecimal data be
+In the above example, ``revert("Not enough You provided.");`` will cause the following hexadecimal data be
 set as error return data:
 
 .. code::

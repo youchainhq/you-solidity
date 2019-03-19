@@ -32,7 +32,7 @@
 using namespace std;
 using namespace dev;
 using namespace dev::solidity;
-using namespace dev::lll;
+using namespace dev::eth;
 
 static string const VersionString =
 	string(ETH_PROJECT_VERSION) +
@@ -49,7 +49,6 @@ static void help()
 		<< "    -a,--assembly  Only parse and compile; show assembly." << endl
 		<< "    -t,--parse-tree  Only parse; show parse tree." << endl
 		<< "    -o,--optimise  Turn on/off the optimiser; off by default." << endl
-		<< "    -d,--disassemble  Disassemble input into an opcode stream." << endl
 		<< "    -h,--help  Show this help message and exit." << endl
 		<< "    -V,--version  Show the version and exit." << endl;
 	exit(0);
@@ -134,7 +133,7 @@ int main(int argc, char** argv)
 	}
 	else if (mode == Binary || mode == Hex)
 	{
-		auto bs = compileLLL(src, langutil::EVMVersion{}, optimise ? true : false, &errors, readFileAsString);
+		auto bs = compileLLL(src, EVMVersion{}, optimise ? true : false, &errors, readFileAsString);
 		if (mode == Hex)
 			cout << toHex(bs) << endl;
 		else if (mode == Binary)
@@ -146,7 +145,7 @@ int main(int argc, char** argv)
 	}
 	else if (mode == Assembly)
 	{
-		cout << compileLLLToAsm(src, langutil::EVMVersion{}, optimise ? true : false, &errors, readFileAsString) << endl;
+		cout << compileLLLToAsm(src, EVMVersion{}, optimise ? true : false, &errors, readFileAsString) << endl;
 	}
 
 	for (auto const& i: errors)

@@ -22,7 +22,7 @@ Remix
 
 `Access Remix online <https://remix.ethereum.org/>`_, you don't need to install anything.
 If you want to use it without connection to the Internet, go to
-https://github.com/ethereum/remix-live/tree/gh-pages and download the ``.zip`` file as
+https://github.com/ethereum/browser-solidity/tree/gh-pages and download the .ZIP file as
 explained on that page.
 
 Further options on this page detail installing commandline Solidity compiler software
@@ -35,24 +35,22 @@ npm / Node.js
 =============
 
 Use `npm` for a convenient and portable way to install `solcjs`, a Solidity compiler. The
-`solcjs` program has fewer features than the ways to access the compiler described
-further down this page. The
+`solcjs` program has fewer features than all options further down this page. Our 
 :ref:`commandline-compiler` documentation assumes you are using
-the full-featured compiler, `solc`. The usage of `solcjs` is documented inside its own
-`repository <https://github.com/ethereum/solc-js>`_.
+the full-featured compiler, `solc`. So if you install `solcjs` from `npm` then you will
+stop reading the documentation here and then continue to `solc-js <https://github.com/ethereum/solc-js>`_.
 
 Note: The solc-js project is derived from the C++
-`solc` by using Emscripten which means that both use the same compiler source code.
-`solc-js` can be used in JavaScript projects directly (such as Remix).
+`solc` by using Emscripten. `solc-js` can be used in JavaScript projects directly (such as Remix).
 Please refer to the solc-js repository for instructions.
 
-.. code-block:: bash
+.. code:: bash
 
     npm install -g solc
 
 .. note::
 
-    The commandline executable is named `solcjs`.
+    The commandline is named `solcjs`.
 
     The comandline options of `solcjs` are not compatible with `solc` and tools (such as `geth`)
     expecting the behaviour of `solc` will not work with `solcjs`.
@@ -64,9 +62,9 @@ We provide up to date docker builds for the compiler. The ``stable``
 repository contains released versions while the ``nightly``
 repository contains potentially unstable changes in the develop branch.
 
-.. code-block:: bash
+.. code:: bash
 
-    docker run ethereum/solc:stable --version
+    docker run ethereum/solc:stable solc --version
 
 Currently, the docker image only contains the compiler executable,
 so you have to do some additional work to link in the source and
@@ -78,66 +76,65 @@ Binary Packages
 Binary packages of Solidity are available at
 `solidity/releases <https://github.com/ethereum/solidity/releases>`_.
 
-We also have PPAs for Ubuntu, you can get the latest stable
-version using the following commands:
+We also have PPAs for Ubuntu.  For the latest stable version.
 
-.. code-block:: bash
+.. code:: bash
 
     sudo add-apt-repository ppa:ethereum/ethereum
     sudo apt-get update
     sudo apt-get install solc
 
-The nightly version can be installed using these commands:
+If you want to use the cutting edge developer version:
 
-.. code-block:: bash
+.. code:: bash
 
     sudo add-apt-repository ppa:ethereum/ethereum
     sudo add-apt-repository ppa:ethereum/ethereum-dev
     sudo apt-get update
     sudo apt-get install solc
-
+    
 We are also releasing a `snap package <https://snapcraft.io/>`_, which is installable in all the `supported Linux distros <https://snapcraft.io/docs/core/install>`_. To install the latest stable version of solc:
 
-.. code-block:: bash
+.. code:: bash
 
     sudo snap install solc
 
-If you want to help testing the latest development version of Solidity
-with the most recent changes, please use the following:
+Or if you want to help testing the unstable solc with the most recent changes from the development branch:
 
-.. code-block:: bash
+.. code:: bash
 
     sudo snap install solc --edge
 
 Arch Linux also has packages, albeit limited to the latest development version:
 
-.. code-block:: bash
+.. code:: bash
 
     pacman -S solidity
 
-We distribute the Solidity compiler through Homebrew
-as a build-from-source version. Pre-built bottles are
-currently not supported.
+Homebrew is missing pre-built bottles at the time of writing,
+following a Jenkins to TravisCI migration, but Homebrew
+should still work just fine as a means to build-from-source.
+We will re-add the pre-built bottles soon.
 
-.. code-block:: bash
+.. code:: bash
 
     brew update
     brew upgrade
     brew tap ethereum/ethereum
     brew install solidity
 
-If you need a specific version of Solidity you can install a
+If you need a specific version of Solidity you can install a 
 Homebrew formula directly from Github.
 
-View
+View 
 `solidity.rb commits on Github <https://github.com/ethereum/homebrew-ethereum/commits/master/solidity.rb>`_.
 
-Follow the history links until you have a raw file link of a
+Follow the history links until you have a raw file link of a 
 specific commit of ``solidity.rb``.
 
 Install it using ``brew``:
 
-.. code-block:: bash
+.. code:: bash
 
     brew unlink solidity
     # Install 0.4.8
@@ -145,7 +142,7 @@ Install it using ``brew``:
 
 Gentoo Linux also provides a solidity package that can be installed using ``emerge``:
 
-.. code-block:: bash
+.. code:: bash
 
     emerge dev-lang/solidity
 
@@ -154,35 +151,34 @@ Gentoo Linux also provides a solidity package that can be installed using ``emer
 Building from Source
 ====================
 
-Prerequisites - All Operating Systems
--------------------------------------
+Clone the Repository
+--------------------
 
-The following are dependencies for all builds of Solidity:
+To clone the source code, execute the following command:
 
-+-----------------------------------+-------------------------------------------------------+
-| Software                          | Notes                                                 |
-+===================================+=======================================================+
-| `CMake`_                          | Cross-platform build file generator.                  |
-+-----------------------------------+-------------------------------------------------------+
-| `Boost`_  (version 1.65+)         | C++ libraries.                                        |
-+-----------------------------------+-------------------------------------------------------+
-| `Git`_                            | Command-line tool for retrieving source code.         |
-+-----------------------------------+-------------------------------------------------------+
-| `z3`_ (version 5.6+, Optional)    | For use with SMT checker.                             |
-+-----------------------------------+-------------------------------------------------------+
-| `cvc4`_ (Optional)                | For use with SMT checker.                             |
-+-----------------------------------+-------------------------------------------------------+
+.. code:: bash
 
-.. _cvc4: http://cvc4.cs.stanford.edu/web/
-.. _Git: https://git-scm.com/download
-.. _Boost: https://www.boost.org
-.. _CMake: https://cmake.org/download/
-.. _z3: https://github.com/Z3Prover/z3
+    git clone --recursive https://github.com/ethereum/solidity.git
+    cd solidity
+
+If you want to help developing Solidity,
+you should fork Solidity and add your personal fork as a second remote:
+
+.. code:: bash
+
+    cd solidity
+    git remote add personal git@github.com:[username]/solidity.git
+
+Solidity has git submodules.  Ensure they are properly loaded:
+
+.. code:: bash
+
+   git submodule update --init --recursive
 
 Prerequisites - macOS
 ---------------------
 
-For macOS builds, ensure that you have the latest version of
+For macOS, ensure that you have the latest version of
 `Xcode installed <https://developer.apple.com/xcode/download/>`_.
 This contains the `Clang C++ compiler <https://en.wikipedia.org/wiki/Clang>`_, the
 `Xcode IDE <https://en.wikipedia.org/wiki/Xcode>`_ and other Apple development
@@ -191,35 +187,40 @@ If you are installing Xcode for the first time, or have just installed a new
 version then you will need to agree to the license before you can do
 command-line builds:
 
-.. code-block:: bash
+.. code:: bash
 
     sudo xcodebuild -license accept
 
-Our OS X build script uses `the Homebrew <http://brew.sh>`_
+Our OS X builds require you to `install the Homebrew <http://brew.sh>`_
 package manager for installing external dependencies.
 Here's how to `uninstall Homebrew
 <https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/FAQ.md#how-do-i-uninstall-homebrew>`_,
 if you ever want to start again from scratch.
 
+
 Prerequisites - Windows
 -----------------------
 
-You need to install the following dependencies for Windows builds of Solidity:
+You will need to install the following dependencies for Windows builds of Solidity:
 
 +-----------------------------------+-------------------------------------------------------+
 | Software                          | Notes                                                 |
 +===================================+=======================================================+
+| `Git for Windows`_                | Command-line tool for retrieving source from Github.  |
++-----------------------------------+-------------------------------------------------------+
+| `CMake`_                          | Cross-platform build file generator.                  |
++-----------------------------------+-------------------------------------------------------+
 | `Visual Studio 2017 Build Tools`_ | C++ compiler                                          |
 +-----------------------------------+-------------------------------------------------------+
 | `Visual Studio 2017`_  (Optional) | C++ compiler and dev environment.                     |
 +-----------------------------------+-------------------------------------------------------+
 
-If you already have one IDE and only need the compiler and libraries,
+If you've already had one IDE and only need compiler and libraries,
 you could install Visual Studio 2017 Build Tools.
 
 Visual Studio 2017 provides both IDE and necessary compiler and libraries.
 So if you have not got an IDE and prefer to develop solidity, Visual Studio 2017
-may be a choice for you to get everything setup easily.
+may be an choice for you to get everything setup easily.
 
 Here is the list of components that should be installed
 in Visual Studio 2017 Build Tools or Visual Studio 2017:
@@ -230,41 +231,29 @@ in Visual Studio 2017 Build Tools or Visual Studio 2017:
 * Windows 8.1 SDK
 * C++/CLI support
 
+.. _Git for Windows: https://git-scm.com/download/win
+.. _CMake: https://cmake.org/download/
 .. _Visual Studio 2017: https://www.visualstudio.com/vs/
 .. _Visual Studio 2017 Build Tools: https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017
 
-Dependencies Helper Script
---------------------------
 
-We have a helper script which you can use to install all required external dependencies
-on macOS, Windows and on numerous Linux distros.
+External Dependencies
+---------------------
 
-.. code-block:: bash
+We now have a "one button" script which installs all required external dependencies
+on macOS, Windows and on numerous Linux distros.  This used to be a multi-step
+manual process, but is now a one-liner:
+
+.. code:: bash
 
     ./scripts/install_deps.sh
 
 Or, on Windows:
 
-.. code-block:: bat
+.. code:: bat
 
     scripts\install_deps.bat
 
-Clone the Repository
---------------------
-
-To clone the source code, execute the following command:
-
-.. code-block:: bash
-
-    git clone --recursive https://github.com/ethereum/solidity.git
-    cd solidity
-
-If you want to help developing Solidity,
-you should fork Solidity and add your personal fork as a second remote:
-
-.. code-block:: bash
-
-    git remote add personal git@github.com:[username]/solidity.git
 
 Command-Line Build
 ------------------
@@ -272,30 +261,24 @@ Command-Line Build
 **Be sure to install External Dependencies (see above) before build.**
 
 Solidity project uses CMake to configure the build.
-You might want to install ccache to speed up repeated builds.
-CMake will pick it up automatically.
 Building Solidity is quite similar on Linux, macOS and other Unices:
 
-.. code-block:: bash
+.. code:: bash
 
     mkdir build
     cd build
     cmake .. && make
 
-.. warning::
+or even easier:
 
-    BSD builds should work, but are untested by the Solidity team.
-
-or even easier on Linux and macOS, you can run:
-
-.. code-block:: bash
-
+.. code:: bash
+    
     #note: this will install binaries solc and soltest at usr/local/bin
     ./scripts/build.sh
 
-And for Windows:
+And even for Windows:
 
-.. code-block:: bash
+.. code:: bash
 
     mkdir build
     cd build
@@ -304,41 +287,18 @@ And for Windows:
 This latter set of instructions should result in the creation of
 **solidity.sln** in that build directory.  Double-clicking on that file
 should result in Visual Studio firing up.  We suggest building
-**Release** configuration, but all others work.
+**RelWithDebugInfo** configuration, but all others work.
 
 Alternatively, you can build for Windows on the command-line, like so:
 
-.. code-block:: bash
+.. code:: bash
 
-    cmake --build . --config Release
+    cmake --build . --config RelWithDebInfo
 
 CMake options
 =============
 
 If you are interested what CMake options are available run ``cmake .. -LH``.
-
-.. _smt_solvers_build:
-
-SMT Solvers
------------
-Solidity can be built against SMT solvers and will do so by default if
-they are found in the system. Each solver can be disabled by a `cmake` option.
-
-*Note: In some cases, this can also be a potential workaround for build failures.*
-
-
-Inside the build folder you can disable them, since they are enabled by default:
-
-.. code-block:: bash
-
-    # disables only Z3 SMT Solver.
-    cmake .. -DUSE_Z3=OFF
-
-    # disables only CVC4 SMT Solver.
-    cmake .. -DUSE_CVC4=OFF
-
-    # disables both Z3 and CVC4
-    cmake .. -DUSE_CVC4=OFF -DUSE_Z3=OFF
 
 The version string in detail
 ============================
@@ -348,7 +308,7 @@ The Solidity version string contains four parts:
 - the version number
 - pre-release tag, usually set to ``develop.YYYY.MM.DD`` or ``nightly.YYYY.MM.DD``
 - commit in the format of ``commit.GITHASH``
-- platform, which has an arbitrary number of items, containing details about the platform and compiler
+- platform has arbitrary number of items, containing details about the platform and compiler
 
 If there are local modifications, the commit will be postfixed with ``.mod``.
 

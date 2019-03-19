@@ -18,6 +18,7 @@
 #pragma once
 
 #include <libsolidity/analysis/ControlFlowGraph.h>
+
 #include <set>
 
 namespace dev
@@ -28,22 +29,23 @@ namespace solidity
 class ControlFlowAnalyzer: private ASTConstVisitor
 {
 public:
-	explicit ControlFlowAnalyzer(CFG const& _cfg, langutil::ErrorReporter& _errorReporter):
+	explicit ControlFlowAnalyzer(CFG const& _cfg, ErrorReporter& _errorReporter):
 		m_cfg(_cfg), m_errorReporter(_errorReporter) {}
 
 	bool analyze(ASTNode const& _astRoot);
 
-	bool visit(FunctionDefinition const& _function) override;
+	virtual bool visit(FunctionDefinition const& _function) override;
 
 private:
-	/// Checks for uninitialized variable accesses in the control flow between @param _entry and @param _exit.
-	void checkUninitializedAccess(CFGNode const* _entry, CFGNode const* _exit) const;
-	/// Checks for unreachable code, i.e. code ending in @param _exit or @param _revert
-	/// that can not be reached from @param _entry.
-	void checkUnreachable(CFGNode const* _entry, CFGNode const* _exit, CFGNode const* _revert) const;
+	static std::set<VariableDeclaration const*> variablesAssignedInNode(CFGNode const *node);
+	void checkUnassignedStorageReturnValues(
+		FunctionDefinition const& _function,
+		CFGNode const* _functionEntry,
+		CFGNode const* _functionExit
+	) const;
 
 	CFG const& m_cfg;
-	langutil::ErrorReporter& m_errorReporter;
+	ErrorReporter& m_errorReporter;
 };
 
 }

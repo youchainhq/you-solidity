@@ -1,3 +1,4 @@
+pragma experimental "v0.5.0";
 contract C {
 	function f() public pure returns (uint, uint, bytes32) {
 		uint a;
@@ -7,5 +8,5 @@ contract C {
 	}
 }
 // ----
-// TypeError: (103-106): Type tuple(uint256,uint256,bytes32) is not implicitly convertible to expected type tuple(uint256,).
-// TypeError: (117-120): Type tuple(uint256,uint256,bytes32) is not implicitly convertible to expected type tuple(,bytes32).
+// TypeError: (126-136): Different number of components on the left hand side (2) than on the right hand side (3).
+// TypeError: (140-150): Different number of components on the left hand side (2) than on the right hand side (3).

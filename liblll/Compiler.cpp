@@ -26,9 +26,9 @@
 
 using namespace std;
 using namespace dev;
-using namespace dev::lll;
+using namespace dev::eth;
 
-bytes dev::lll::compileLLL(string const& _src, langutil::EVMVersion _evmVersion, bool _opt, std::vector<std::string>* _errors, ReadCallback const& _readFile)
+bytes dev::eth::compileLLL(string const& _src, dev::solidity::EVMVersion _evmVersion, bool _opt, std::vector<std::string>* _errors, dev::eth::ReadCallback const& _readFile)
 {
 	try
 	{
@@ -36,7 +36,7 @@ bytes dev::lll::compileLLL(string const& _src, langutil::EVMVersion _evmVersion,
 		cs.populateStandard();
 		auto assembly = CodeFragment::compile(_src, cs, _readFile).assembly(cs);
 		if (_opt)
-			assembly = assembly.optimise(true, _evmVersion, true, 200);
+			assembly = assembly.optimise(true, _evmVersion);
 		bytes ret = assembly.assemble().bytecode;
 		for (auto i: cs.treesToKill)
 			killBigints(i);
@@ -46,27 +46,27 @@ bytes dev::lll::compileLLL(string const& _src, langutil::EVMVersion _evmVersion,
 	{
 		if (_errors)
 		{
-			_errors->emplace_back("Parse error.");
-			_errors->emplace_back(boost::diagnostic_information(_e));
+			_errors->push_back("Parse error.");
+			_errors->push_back(boost::diagnostic_information(_e));
 		}
 	}
 	catch (std::exception const& _e)
 	{
 		if (_errors)
 		{
-			_errors->emplace_back("Parse exception.");
-			_errors->emplace_back(boost::diagnostic_information(_e));
+			_errors->push_back("Parse exception.");
+			_errors->push_back(boost::diagnostic_information(_e));
 		}
 	}
 	catch (...)
 	{
 		if (_errors)
-			_errors->emplace_back("Internal compiler exception.");
+			_errors->push_back("Internal compiler exception.");
 	}
 	return bytes();
 }
 
-std::string dev::lll::compileLLLToAsm(std::string const& _src, langutil::EVMVersion _evmVersion, bool _opt, std::vector<std::string>* _errors, ReadCallback const& _readFile)
+std::string dev::eth::compileLLLToAsm(std::string const& _src, EVMVersion _evmVersion, bool _opt, std::vector<std::string>* _errors, ReadCallback const& _readFile)
 {
 	try
 	{
@@ -74,7 +74,7 @@ std::string dev::lll::compileLLLToAsm(std::string const& _src, langutil::EVMVers
 		cs.populateStandard();
 		auto assembly = CodeFragment::compile(_src, cs, _readFile).assembly(cs);
 		if (_opt)
-			assembly = assembly.optimise(true, _evmVersion, true, 200);
+			assembly = assembly.optimise(true, _evmVersion);
 		string ret = assembly.assemblyString();
 		for (auto i: cs.treesToKill)
 			killBigints(i);
@@ -84,27 +84,26 @@ std::string dev::lll::compileLLLToAsm(std::string const& _src, langutil::EVMVers
 	{
 		if (_errors)
 		{
-			_errors->emplace_back("Parse error.");
-			_errors->emplace_back(boost::diagnostic_information(_e));
+			_errors->push_back("Parse error.");
+			_errors->push_back(boost::diagnostic_information(_e));
 		}
 	}
 	catch (std::exception const& _e)
 	{
-		if (_errors)
-		{
-			_errors->emplace_back("Parse exception.");
-			_errors->emplace_back(boost::diagnostic_information(_e));
+		if (_errors) {
+			_errors->push_back("Parse exception.");
+			_errors->push_back(boost::diagnostic_information(_e));
 		}
 	}
 	catch (...)
 	{
 		if (_errors)
-			_errors->emplace_back("Internal compiler exception.");
+			_errors->push_back("Internal compiler exception.");
 	}
 	return string();
 }
 
-string dev::lll::parseLLL(string const& _src)
+string dev::eth::parseLLL(string const& _src)
 {
 	sp::utree o;
 

@@ -22,25 +22,22 @@
 
 #pragma once
 
-#include <libsolidity/ast/ASTAnnotations.h>
 #include <string>
-
-namespace langutil
-{
-class ErrorReporter;
-}
+#include <libsolidity/ast/ASTAnnotations.h>
 
 namespace dev
 {
 namespace solidity
 {
 
+class ErrorReporter;
+
 class DocStringParser
 {
 public:
 	/// Parse the given @a _docString and stores the parsed components internally.
 	/// @returns false on error and appends the error to @a _errors.
-	bool parse(std::string const& _docString, langutil::ErrorReporter& _errorReporter);
+	bool parse(std::string const& _docString, ErrorReporter& _errorReporter);
 
 	std::multimap<std::string, DocTag> const& tags() const { return m_docTags; }
 
@@ -66,7 +63,7 @@ private:
 	/// Mapping tag name -> content.
 	std::multimap<std::string, DocTag> m_docTags;
 	DocTag* m_lastTag = nullptr;
-	langutil::ErrorReporter* m_errorReporter = nullptr;
+	ErrorReporter* m_errorReporter = nullptr;
 	bool m_errorsOccurred = false;
 };
 

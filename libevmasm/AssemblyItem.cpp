@@ -110,16 +110,13 @@ int AssemblyItem::returnValues() const
 		return 1;
 	case Tag:
 		return 0;
-	default:
-		break;
+	default:;
 	}
 	return 0;
 }
 
 bool AssemblyItem::canBeFunctional() const
 {
-	if (m_jumpType != JumpType::Ordinary)
-		return false;
 	switch (m_type)
 	{
 	case Operation:
@@ -136,10 +133,9 @@ bool AssemblyItem::canBeFunctional() const
 		return true;
 	case Tag:
 		return false;
-	default:
-		break;
+	default:;
 	}
-	return false;
+	return 0;
 }
 
 string AssemblyItem::getJumpTypeAsString() const
@@ -170,7 +166,7 @@ string AssemblyItem::toAssemblyText() const
 		break;
 	}
 	case Push:
-		text = toHex(toCompactBigEndian(data(), 1), HexPrefix::Add);
+		text = toHex(toCompactBigEndian(data(), 1), 1, HexPrefix::Add);
 		break;
 	case PushString:
 		text = string("data_") + toHex(data());

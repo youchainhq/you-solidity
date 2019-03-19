@@ -21,7 +21,6 @@
 
 #include <libevmasm/LinkerObject.h>
 #include <libdevcore/CommonData.h>
-#include <libdevcore/Keccak256.h>
 
 using namespace dev;
 using namespace dev::eth;
@@ -51,17 +50,12 @@ string LinkerObject::toHex() const
 	for (auto const& ref: linkReferences)
 	{
 		size_t pos = ref.first * 2;
-		string hash = libraryPlaceholder(ref.second);
+		string const& name = ref.second;
 		hex[pos] = hex[pos + 1] = hex[pos + 38] = hex[pos + 39] = '_';
 		for (size_t i = 0; i < 36; ++i)
-			hex[pos + 2 + i] = hash.at(i);
+			hex[pos + 2 + i] = i < name.size() ? name[i] : '_';
 	}
 	return hex;
-}
-
-string LinkerObject::libraryPlaceholder(string const& _libraryName)
-{
-	return "$" + keccak256(_libraryName).hex().substr(0, 34) + "$";
 }
 
 h160 const*
@@ -74,7 +68,7 @@ LinkerObject::matchLibrary(
 	if (it != _libraryAddresses.end())
 		return &it->second;
 	// If the user did not supply a fully qualified library name,
-	// try to match only the simple library name
+	// try to match only the simple libary name
 	size_t colon = _linkRefName.find(':');
 	if (colon == string::npos)
 		return nullptr;

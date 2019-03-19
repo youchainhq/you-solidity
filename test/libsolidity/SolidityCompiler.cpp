@@ -38,12 +38,12 @@ BOOST_AUTO_TEST_CASE(does_not_include_creation_time_only_internal_functions)
 	char const* sourceCode = R"(
 		contract C {
 			uint x;
-			constructor() public { f(); }
+			function C() { f(); }
 			function f() internal { for (uint i = 0; i < 10; ++i) x += 3 + i; }
 		}
 	)";
-	m_compiler.setOptimiserSettings(dev::test::Options::get().optimize);
 	BOOST_REQUIRE(success(sourceCode));
+	m_compiler.setOptimiserSettings(dev::test::Options::get().optimize);
 	BOOST_REQUIRE_MESSAGE(m_compiler.compile(), "Compiling contract failed");
 	bytes const& creationBytecode = m_compiler.object("C").bytecode;
 	bytes const& runtimeBytecode = m_compiler.runtimeObject("C").bytecode;

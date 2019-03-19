@@ -9,5 +9,5 @@ contract C
     function bar() public only_owner;
 }
 // ----
-// SyntaxError: (203-236): Functions without implementation cannot have modifiers.
-// SyntaxError: (241-274): Functions without implementation cannot have modifiers.
+// Warning: (203-236): Modifiers of functions without implementation are ignored.
+// Warning: (241-274): Modifiers of functions without implementation are ignored.

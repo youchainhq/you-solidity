@@ -2,8 +2,7 @@ macro(configure_project)
 	set(NAME ${PROJECT_NAME})
 
 	# features
-	eth_default_option(COVERAGE OFF)
-	eth_default_option(OSSFUZZ OFF)
+	eth_default_option(PROFILING OFF)
 
 	# components
 	eth_default_option(TESTS ON)
@@ -28,7 +27,7 @@ macro(print_config NAME)
 	message("-- CMAKE_BUILD_TYPE Build type                               ${CMAKE_BUILD_TYPE}")
 	message("-- TARGET_PLATFORM  Target platform                          ${CMAKE_SYSTEM_NAME}")
 	message("--------------------------------------------------------------- features")
-	message("-- COVERAGE         Coverage support                         ${COVERAGE}")
+	message("-- PROFILING        Profiling support                        ${PROFILING}")
 	message("------------------------------------------------------------- components")
 if (SUPPORT_TESTS)
 	message("-- TESTS            Build tests                              ${TESTS}")

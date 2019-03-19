@@ -23,7 +23,8 @@
 #include <boost/test/unit_test.hpp>
 #include <libsolidity/interface/StandardCompiler.h>
 #include <libdevcore/JSON.h>
-#include <test/Metadata.h>
+
+#include "../Metadata.h"
 
 using namespace std;
 using namespace dev::eth;
@@ -224,71 +225,6 @@ BOOST_AUTO_TEST_CASE(smoke_test)
 	BOOST_CHECK(containsAtMostWarnings(result));
 }
 
-BOOST_AUTO_TEST_CASE(optimizer_enabled_not_boolean)
-{
-	char const* input = R"(
-	{
-		"language": "Solidity",
-		"settings": {
-			"optimizer": {
-				"enabled": "wrong"
-			}
-		},
-		"sources": {
-			"empty": {
-				"content": ""
-			}
-		}
-	}
-	)";
-	Json::Value result = compile(input);
-	BOOST_CHECK(containsError(result, "JSONError", "The \"enabled\" setting must be a Boolean."));
-}
-
-BOOST_AUTO_TEST_CASE(optimizer_runs_not_a_number)
-{
-	char const* input = R"(
-	{
-		"language": "Solidity",
-		"settings": {
-			"optimizer": {
-				"enabled": true,
-				"runs": "not a number"
-			}
-		},
-		"sources": {
-			"empty": {
-				"content": ""
-			}
-		}
-	}
-	)";
-	Json::Value result = compile(input);
-	BOOST_CHECK(containsError(result, "JSONError", "The \"runs\" setting must be an unsigned number."));
-}
-
-BOOST_AUTO_TEST_CASE(optimizer_runs_not_an_unsigned_number)
-{
-	char const* input = R"(
-	{
-		"language": "Solidity",
-		"settings": {
-			"optimizer": {
-				"enabled": true,
-				"runs": -1
-			}
-		},
-		"sources": {
-			"empty": {
-				"content": ""
-			}
-		}
-	}
-	)";
-	Json::Value result = compile(input);
-	BOOST_CHECK(containsError(result, "JSONError", "The \"runs\" setting must be an unsigned number."));
-}
-
 BOOST_AUTO_TEST_CASE(basic_compilation)
 {
 	char const* input = R"(
@@ -302,7 +238,7 @@ BOOST_AUTO_TEST_CASE(basic_compilation)
 		"settings": {
 			"outputSelection": {
 				"fileA": {
-					"A": [ "abi", "devdoc", "userdoc", "evm.bytecode", "evm.assembly", "evm.gasEstimates", "evm.legacyAssembly", "metadata" ],
+					"A": [ "abi", "devdoc", "userdoc", "evm.bytecode", "evm.assembly", "evm.gasEstimates", "metadata" ],
 					"": [ "legacyAST" ]
 				}
 			}
@@ -325,52 +261,24 @@ BOOST_AUTO_TEST_CASE(basic_compilation)
 	BOOST_CHECK(contract["evm"]["bytecode"]["object"].isString());
 	BOOST_CHECK_EQUAL(
 		dev::test::bytecodeSansMetadata(contract["evm"]["bytecode"]["object"].asString()),
-		"6080604052348015600f57600080fd5b50603580601d6000396000f3fe6080604052600080fdfe"
+		"6080604052348015600f57600080fd5b50603580601d6000396000f3006080604052600080fd00"
 	);
 	BOOST_CHECK(contract["evm"]["assembly"].isString());
 	BOOST_CHECK(contract["evm"]["assembly"].asString().find(
 		"    /* \"fileA\":0:14  contract A { } */\n  mstore(0x40, 0x80)\n  "
 		"callvalue\n    /* \"--CODEGEN--\":8:17   */\n  dup1\n    "
 		"/* \"--CODEGEN--\":5:7   */\n  iszero\n  tag_1\n  jumpi\n    "
-		"/* \"--CODEGEN--\":30:31   */\n  0x00\n    /* \"--CODEGEN--\":27:28   */\n  "
+		"/* \"--CODEGEN--\":30:31   */\n  0x0\n    /* \"--CODEGEN--\":27:28   */\n  "
 		"dup1\n    /* \"--CODEGEN--\":20:32   */\n  revert\n    /* \"--CODEGEN--\":5:7   */\n"
 		"tag_1:\n    /* \"fileA\":0:14  contract A { } */\n  pop\n  dataSize(sub_0)\n  dup1\n  "
-		"dataOffset(sub_0)\n  0x00\n  codecopy\n  0x00\n  return\nstop\n\nsub_0: assembly {\n        "
-		"/* \"fileA\":0:14  contract A { } */\n      mstore(0x40, 0x80)\n      0x00\n      "
+		"dataOffset(sub_0)\n  0x0\n  codecopy\n  0x0\n  return\nstop\n\nsub_0: assembly {\n        "
+		"/* \"fileA\":0:14  contract A { } */\n      mstore(0x40, 0x80)\n      0x0\n      "
 		"dup1\n      revert\n\n    auxdata: 0xa165627a7a72305820"
 	) == 0);
 	BOOST_CHECK(contract["evm"]["gasEstimates"].isObject());
 	BOOST_CHECK_EQUAL(
 		dev::jsonCompactPrint(contract["evm"]["gasEstimates"]),
 		"{\"creation\":{\"codeDepositCost\":\"10600\",\"executionCost\":\"66\",\"totalCost\":\"10666\"}}"
-	);
-	// Lets take the top level `.code` section (the "deployer code"), that should expose most of the features of
-	// the assembly JSON. What we want to check here is Operation, Push, PushTag, PushSub, PushSubSize and Tag.
-	BOOST_CHECK(contract["evm"]["legacyAssembly"].isObject());
-	BOOST_CHECK(contract["evm"]["legacyAssembly"][".code"].isArray());
-	BOOST_CHECK_EQUAL(
-		dev::jsonCompactPrint(contract["evm"]["legacyAssembly"][".code"]),
-		"[{\"begin\":0,\"end\":14,\"name\":\"PUSH\",\"value\":\"80\"},"
-		"{\"begin\":0,\"end\":14,\"name\":\"PUSH\",\"value\":\"40\"},"
-		"{\"begin\":0,\"end\":14,\"name\":\"MSTORE\"},"
-		"{\"begin\":0,\"end\":14,\"name\":\"CALLVALUE\"},"
-		"{\"begin\":8,\"end\":17,\"name\":\"DUP1\"},"
-		"{\"begin\":5,\"end\":7,\"name\":\"ISZERO\"},"
-		"{\"begin\":5,\"end\":7,\"name\":\"PUSH [tag]\",\"value\":\"1\"},"
-		"{\"begin\":5,\"end\":7,\"name\":\"JUMPI\"},"
-		"{\"begin\":30,\"end\":31,\"name\":\"PUSH\",\"value\":\"0\"},"
-		"{\"begin\":27,\"end\":28,\"name\":\"DUP1\"},"
-		"{\"begin\":20,\"end\":32,\"name\":\"REVERT\"},"
-		"{\"begin\":5,\"end\":7,\"name\":\"tag\",\"value\":\"1\"},"
-		"{\"begin\":5,\"end\":7,\"name\":\"JUMPDEST\"},"
-		"{\"begin\":0,\"end\":14,\"name\":\"POP\"},"
-		"{\"begin\":0,\"end\":14,\"name\":\"PUSH #[$]\",\"value\":\"0000000000000000000000000000000000000000000000000000000000000000\"},"
-		"{\"begin\":0,\"end\":14,\"name\":\"DUP1\"},"
-		"{\"begin\":0,\"end\":14,\"name\":\"PUSH [$]\",\"value\":\"0000000000000000000000000000000000000000000000000000000000000000\"},"
-		"{\"begin\":0,\"end\":14,\"name\":\"PUSH\",\"value\":\"0\"},"
-		"{\"begin\":0,\"end\":14,\"name\":\"CODECOPY\"},"
-		"{\"begin\":0,\"end\":14,\"name\":\"PUSH\",\"value\":\"0\"},"
-		"{\"begin\":0,\"end\":14,\"name\":\"RETURN\"}]"
 	);
 	BOOST_CHECK(contract["metadata"].isString());
 	BOOST_CHECK(dev::test::isValidMetadata(contract["metadata"].asString()));
@@ -558,7 +466,7 @@ BOOST_AUTO_TEST_CASE(output_selection_dependent_contract)
 		},
 		"sources": {
 			"fileA": {
-				"content": "contract B { } contract A { function f() public { new B(); } }"
+				"content": "contract B { } contract A { function f() { new B(); } }"
 			}
 		}
 	}
@@ -587,7 +495,7 @@ BOOST_AUTO_TEST_CASE(output_selection_dependent_contract_with_import)
 		},
 		"sources": {
 			"fileA": {
-				"content": "import \"fileB\"; contract A { function f() public { new B(); } }"
+				"content": "import \"fileB\"; contract A { function f() { new B(); } }"
 			},
 			"fileB": {
 				"content": "contract B { }"
@@ -648,10 +556,10 @@ BOOST_AUTO_TEST_CASE(library_filename_with_colon)
 		},
 		"sources": {
 			"fileA": {
-				"content": "import \"git:library.sol\"; contract A { function f() public returns (uint) { return L.g(); } }"
+				"content": "import \"git:library.sol\"; contract A { function f() returns (uint) { return L.g(); } }"
 			},
 			"git:library.sol": {
-				"content": "library L { function g() public returns (uint) { return 1; } }"
+				"content": "library L { function g() returns (uint) { return 1; } }"
 			}
 		}
 	}
@@ -704,7 +612,7 @@ BOOST_AUTO_TEST_CASE(libraries_invalid_entry)
 	}
 	)";
 	Json::Value result = compile(input);
-	BOOST_CHECK(containsError(result, "JSONError", "Library entry is not a JSON object."));
+	BOOST_CHECK(containsError(result, "JSONError", "library entry is not a JSON object."));
 }
 
 BOOST_AUTO_TEST_CASE(libraries_invalid_hex)
@@ -798,13 +706,13 @@ BOOST_AUTO_TEST_CASE(library_linking)
 		},
 		"sources": {
 			"fileA": {
-				"content": "import \"library.sol\"; import \"library2.sol\"; contract A { function f() public returns (uint) { L2.g(); return L.g(); } }"
+				"content": "import \"library.sol\"; import \"library2.sol\"; contract A { function f() returns (uint) { L2.g(); return L.g(); } }"
 			},
 			"library.sol": {
-				"content": "library L { function g() public returns (uint) { return 1; } }"
+				"content": "library L { function g() returns (uint) { return 1; } }"
 			},
 			"library2.sol": {
-				"content": "library L2 { function g() public { } }"
+				"content": "library L2 { function g() { } }"
 			}
 		}
 	}
@@ -851,231 +759,14 @@ BOOST_AUTO_TEST_CASE(evm_version)
 	BOOST_CHECK(result["contracts"]["fileA"]["A"]["metadata"].asString().find("\"evmVersion\":\"byzantium\"") != string::npos);
 	result = compile(inputForVersion("\"evmVersion\": \"constantinople\","));
 	BOOST_CHECK(result["contracts"]["fileA"]["A"]["metadata"].asString().find("\"evmVersion\":\"constantinople\"") != string::npos);
-	result = compile(inputForVersion("\"evmVersion\": \"petersburg\","));
-	BOOST_CHECK(result["contracts"]["fileA"]["A"]["metadata"].asString().find("\"evmVersion\":\"petersburg\"") != string::npos);
 	// test default
 	result = compile(inputForVersion(""));
-	BOOST_CHECK(result["contracts"]["fileA"]["A"]["metadata"].asString().find("\"evmVersion\":\"petersburg\"") != string::npos);
+	BOOST_CHECK(result["contracts"]["fileA"]["A"]["metadata"].asString().find("\"evmVersion\":\"byzantium\"") != string::npos);
 	// test invalid
 	result = compile(inputForVersion("\"evmVersion\": \"invalid\","));
 	BOOST_CHECK(result["errors"][0]["message"].asString() == "Invalid EVM version requested.");
 }
 
-BOOST_AUTO_TEST_CASE(optimizer_settings_default_disabled)
-{
-	char const* input = R"(
-	{
-		"language": "Solidity",
-		"settings": {
-			"outputSelection": {
-				"fileA": { "A": [ "metadata" ] }
-			}
-		},
-		"sources": {
-			"fileA": {
-				"content": "contract A { }"
-			}
-		}
-	}
-	)";
-	Json::Value result = compile(input);
-	BOOST_CHECK(containsAtMostWarnings(result));
-	Json::Value contract = getContractResult(result, "fileA", "A");
-	BOOST_CHECK(contract.isObject());
-	BOOST_CHECK(contract["metadata"].isString());
-	Json::Value metadata;
-	BOOST_CHECK(jsonParseStrict(contract["metadata"].asString(), metadata));
-
-	Json::Value const& optimizer = metadata["settings"]["optimizer"];
-	BOOST_CHECK(optimizer.isMember("enabled"));
-	BOOST_CHECK(optimizer["enabled"].asBool() == false);
-	BOOST_CHECK(!optimizer.isMember("details"));
-	BOOST_CHECK(optimizer["runs"].asUInt() == 200);
-}
-
-BOOST_AUTO_TEST_CASE(optimizer_settings_default_enabled)
-{
-	char const* input = R"(
-	{
-		"language": "Solidity",
-		"settings": {
-			"outputSelection": {
-				"fileA": { "A": [ "metadata" ] }
-			},
-			"optimizer": { "enabled": true }
-		},
-		"sources": {
-			"fileA": {
-				"content": "contract A { }"
-			}
-		}
-	}
-	)";
-	Json::Value result = compile(input);
-	BOOST_CHECK(containsAtMostWarnings(result));
-	Json::Value contract = getContractResult(result, "fileA", "A");
-	BOOST_CHECK(contract.isObject());
-	BOOST_CHECK(contract["metadata"].isString());
-	Json::Value metadata;
-	BOOST_CHECK(jsonParseStrict(contract["metadata"].asString(), metadata));
-
-	Json::Value const& optimizer = metadata["settings"]["optimizer"];
-	BOOST_CHECK(optimizer.isMember("enabled"));
-	BOOST_CHECK(optimizer["enabled"].asBool() == true);
-	BOOST_CHECK(!optimizer.isMember("details"));
-	BOOST_CHECK(optimizer["runs"].asUInt() == 200);
-}
-
-BOOST_AUTO_TEST_CASE(optimizer_settings_details_exactly_as_default_disabled)
-{
-	char const* input = R"(
-	{
-		"language": "Solidity",
-		"settings": {
-			"outputSelection": {
-				"fileA": { "A": [ "metadata" ] }
-			},
-			"optimizer": { "details": {
-				"constantOptimizer" : false,
-				"cse" : false,
-				"deduplicate" : false,
-				"jumpdestRemover" : true,
-				"orderLiterals" : false,
-				"peephole" : true
-			} }
-		},
-		"sources": {
-			"fileA": {
-				"content": "contract A { }"
-			}
-		}
-	}
-	)";
-	Json::Value result = compile(input);
-	BOOST_CHECK(containsAtMostWarnings(result));
-	Json::Value contract = getContractResult(result, "fileA", "A");
-	BOOST_CHECK(contract.isObject());
-	BOOST_CHECK(contract["metadata"].isString());
-	Json::Value metadata;
-	BOOST_CHECK(jsonParseStrict(contract["metadata"].asString(), metadata));
-
-	Json::Value const& optimizer = metadata["settings"]["optimizer"];
-	BOOST_CHECK(optimizer.isMember("enabled"));
-	// enabled is switched to false instead!
-	BOOST_CHECK(optimizer["enabled"].asBool() == false);
-	BOOST_CHECK(!optimizer.isMember("details"));
-	BOOST_CHECK(optimizer["runs"].asUInt() == 200);
-}
-
-BOOST_AUTO_TEST_CASE(optimizer_settings_details_different)
-{
-	char const* input = R"(
-	{
-		"language": "Solidity",
-		"settings": {
-			"outputSelection": {
-				"fileA": { "A": [ "metadata" ] }
-			},
-			"optimizer": { "runs": 600, "details": {
-				"constantOptimizer" : true,
-				"cse" : false,
-				"deduplicate" : true,
-				"jumpdestRemover" : true,
-				"orderLiterals" : false,
-				"peephole" : true,
-				"yul": true
-			} }
-		},
-		"sources": {
-			"fileA": {
-				"content": "contract A { }"
-			}
-		}
-	}
-	)";
-	Json::Value result = compile(input);
-	BOOST_CHECK(containsAtMostWarnings(result));
-	Json::Value contract = getContractResult(result, "fileA", "A");
-	BOOST_CHECK(contract.isObject());
-	BOOST_CHECK(contract["metadata"].isString());
-	Json::Value metadata;
-	BOOST_CHECK(jsonParseStrict(contract["metadata"].asString(), metadata));
-
-	Json::Value const& optimizer = metadata["settings"]["optimizer"];
-	BOOST_CHECK(!optimizer.isMember("enabled"));
-	BOOST_CHECK(optimizer.isMember("details"));
-	BOOST_CHECK(optimizer["details"]["constantOptimizer"].asBool() == true);
-	BOOST_CHECK(optimizer["details"]["cse"].asBool() == false);
-	BOOST_CHECK(optimizer["details"]["deduplicate"].asBool() == true);
-	BOOST_CHECK(optimizer["details"]["jumpdestRemover"].asBool() == true);
-	BOOST_CHECK(optimizer["details"]["orderLiterals"].asBool() == false);
-	BOOST_CHECK(optimizer["details"]["peephole"].asBool() == true);
-	BOOST_CHECK(optimizer["details"]["yulDetails"].isObject());
-	BOOST_CHECK_EQUAL(optimizer["details"].getMemberNames().size(), 8);
-	BOOST_CHECK(optimizer["runs"].asUInt() == 600);
-}
-
-BOOST_AUTO_TEST_CASE(metadata_without_compilation)
-{
-	// NOTE: the contract code here should fail to compile due to "out of stack"
-	// If the metadata is successfully returned, that means no compilation was attempted.
-	char const* input = R"(
-	{
-		"language": "Solidity",
-		"settings": {
-			"outputSelection": {
-				"fileA": { "A": [ "metadata" ] }
-			}
-		},
-		"sources": {
-			"fileA": {
-				"content": "contract A {
-  function x(uint a, uint b, uint c, uint d, uint e, uint f, uint g, uint h, uint i, uint j, uint k, uint l, uint m, uint n, uint o, uint p) pure public {}
-  function y() pure public {
-    uint a; uint b; uint c; uint d; uint e; uint f; uint g; uint h; uint i; uint j; uint k; uint l; uint m; uint n; uint o; uint p;
-    x(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p);
-  }
-}"
-			}
-		}
-	}
-	)";
-	Json::Value result = compile(input);
-	BOOST_CHECK(containsAtMostWarnings(result));
-	Json::Value contract = getContractResult(result, "fileA", "A");
-	BOOST_CHECK(contract.isObject());
-	BOOST_CHECK(contract["metadata"].isString());
-	BOOST_CHECK(dev::test::isValidMetadata(contract["metadata"].asString()));
-}
-
-BOOST_AUTO_TEST_CASE(common_pattern)
-{
-	char const* input = R"(
-	{
-		"language": "Solidity",
-		"settings": {
-			"outputSelection": {
-				"*": {
-					"*": [ "evm.bytecode.object", "metadata" ]
-				}
-			}
-		},
-		"sources": {
-			"fileA": {
-				"content": "contract A { function f() pure public {} }"
-			}
-		}
-	}
-	)";
-	Json::Value result = compile(input);
-	BOOST_CHECK(containsAtMostWarnings(result));
-	Json::Value contract = getContractResult(result, "fileA", "A");
-	BOOST_CHECK(contract.isObject());
-	BOOST_CHECK(contract["metadata"].isString());
-	BOOST_CHECK(dev::test::isValidMetadata(contract["metadata"].asString()));
-	BOOST_CHECK(contract["evm"]["bytecode"].isObject());
-	BOOST_CHECK(contract["evm"]["bytecode"]["object"].isString());
-}
 
 BOOST_AUTO_TEST_SUITE_END()
 

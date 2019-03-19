@@ -19,7 +19,6 @@
  * Metadata processing helpers.
  */
 
-#include <libdevcore/CommonData.h>
 #include <string>
 
 namespace dev
@@ -28,10 +27,6 @@ namespace test
 {
 
 /// Returns the bytecode with the metadata hash stripped out.
-bytes bytecodeSansMetadata(bytes const& _bytecode);
-
-/// Returns the bytecode with the metadata hash stripped out.
-/// Throws exception on invalid hex string.
 std::string bytecodeSansMetadata(std::string const& _bytecode);
 
 /// Expects a serialised metadata JSON and returns true if the

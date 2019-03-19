@@ -1,9 +1,0 @@
-// yul
-{}
-// ----
-// mainFunction
-// {
-//     function main()
-//     {
-//     }
-// }

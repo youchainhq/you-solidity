@@ -21,7 +21,6 @@
  */
 
 #include <libsolidity/analysis/SemVerHandler.h>
-
 #include <functional>
 
 using namespace std;
@@ -107,22 +106,18 @@ bool SemVerMatchExpression::MatchComponent::matches(SemVerVersion const& _versio
 			}
 		if (cmp == 0 && !_version.prerelease.empty() && didCompare)
 			cmp = -1;
-
-		switch (prefix)
-		{
-		case Token::Assign:
+		if (prefix == Token::Assign)
 			return cmp == 0;
-		case Token::LessThan:
+		else if (prefix == Token::LessThan)
 			return cmp < 0;
-		case Token::LessThanOrEqual:
+		else if (prefix == Token::LessThanOrEqual)
 			return cmp <= 0;
-		case Token::GreaterThan:
+		else if (prefix == Token::GreaterThan)
 			return cmp > 0;
-		case Token::GreaterThanOrEqual:
+		else if (prefix == Token::GreaterThanOrEqual)
 			return cmp >= 0;
-		default:
+		else
 			solAssert(false, "Invalid SemVer expression");
-		}
 		return false;
 	}
 }
@@ -200,23 +195,22 @@ void SemVerMatchExpressionParser::parseMatchExpression()
 SemVerMatchExpression::MatchComponent SemVerMatchExpressionParser::parseMatchComponent()
 {
 	SemVerMatchExpression::MatchComponent component;
-	Token token = currentToken();
-
-	switch (token)
+	Token::Value token = currentToken();
+	if (
+		token == Token::BitXor ||
+		token == Token::BitNot ||
+		token == Token::LessThan ||
+		token == Token::LessThanOrEqual||
+		token == Token::GreaterThan ||
+		token == Token::GreaterThanOrEqual ||
+		token == Token::Assign
+	)
 	{
-	case Token::BitXor:
-	case Token::BitNot:
-	case Token::LessThan:
-	case Token::LessThanOrEqual:
-	case Token::GreaterThan:
-	case Token::GreaterThanOrEqual:
-	case Token::Assign:
 		component.prefix = token;
 		nextToken();
-		break;
-	default:
-		component.prefix = Token::Assign;
 	}
+	else
+		component.prefix = Token::Assign;
 
 	component.levelsPresent = 0;
 	while (component.levelsPresent < 3)
@@ -281,7 +275,7 @@ char SemVerMatchExpressionParser::nextChar()
 	return currentChar();
 }
 
-Token SemVerMatchExpressionParser::currentToken() const
+Token::Value SemVerMatchExpressionParser::currentToken() const
 {
 	if (m_pos < m_tokens.size())
 		return m_tokens[m_pos];

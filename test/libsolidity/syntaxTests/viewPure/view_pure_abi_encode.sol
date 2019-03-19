@@ -1,5 +1,5 @@
 contract C {
-    function f() pure public returns (bytes memory r) {
+    function f() pure public returns (bytes r) {
         r = abi.encode(1, 2);
         r = abi.encodePacked(f());
         r = abi.encodeWithSelector(0x12345678, 1);

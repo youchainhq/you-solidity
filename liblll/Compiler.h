@@ -23,21 +23,21 @@
 
 #include <libdevcore/Common.h>
 
-#include <liblangutil/EVMVersion.h>
+#include <libsolidity/interface/EVMVersion.h>
 
 #include <string>
 #include <vector>
 
 namespace dev
 {
-namespace lll
+namespace eth
 {
 
 using ReadCallback = std::function<std::string(std::string const&)>;
 
 std::string parseLLL(std::string const& _src);
-std::string compileLLLToAsm(std::string const& _src, langutil::EVMVersion _evmVersion, bool _opt = true, std::vector<std::string>* _errors = nullptr, ReadCallback const& _readFile = ReadCallback());
-bytes compileLLL(std::string const& _src, langutil::EVMVersion _evmVersion, bool _opt = true, std::vector<std::string>* _errors = nullptr, ReadCallback const& _readFile = ReadCallback());
+std::string compileLLLToAsm(std::string const& _src, solidity::EVMVersion _evmVersion, bool _opt = true, std::vector<std::string>* _errors = nullptr, ReadCallback const& _readFile = ReadCallback());
+bytes compileLLL(std::string const& _src, solidity::EVMVersion _evmVersion, bool _opt = true, std::vector<std::string>* _errors = nullptr, ReadCallback const& _readFile = ReadCallback());
 
 }
 }

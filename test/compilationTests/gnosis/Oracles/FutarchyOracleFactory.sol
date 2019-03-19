@@ -1,4 +1,4 @@
-pragma solidity >=0.0;
+pragma solidity ^0.4.11;
 import "../Oracles/FutarchyOracle.sol";
 
 
@@ -33,10 +33,10 @@ contract FutarchyOracleFactory {
      */
     /// @dev Constructor sets event factory contract
     /// @param _eventFactory Event factory contract
-    constructor(EventFactory _eventFactory)
+    function FutarchyOracleFactory(EventFactory _eventFactory)
         public
     {
-        require(address(_eventFactory) != address(0));
+        require(address(_eventFactory) != 0);
         eventFactory = _eventFactory;
     }
 
@@ -78,7 +78,7 @@ contract FutarchyOracleFactory {
             fee,
             deadline
         );
-        emit FutarchyOracleCreation(
+        FutarchyOracleCreation(
             msg.sender,
             futarchyOracle,
             collateralToken,

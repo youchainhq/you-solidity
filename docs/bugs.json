@@ -17,13 +17,12 @@
         "check": {"ast-compact-json-path": "$..[?(@.nodeType === 'EventDefinition')]..[?(@.nodeType === 'UserDefinedTypeName' && @.typeDescriptions.typeString.startsWith('struct'))]"}
     },
     {
-        "name": "NestedArrayFunctionCallDecoder",
-        "summary": "Calling functions that return multi-dimensional fixed-size arrays can result in memory corruption.",
-        "description": "If Solidity code calls a function that returns a multi-dimensional fixed-size array, array elements are incorrectly interpreted as memory pointers and thus can cause memory corruption if the return values are accessed. Calling functions with multi-dimensional fixed-size arrays is unaffected as is returning fixed-size arrays from function calls. The regular expression only checks if such functions are present, not if they are called, which is required for the contract to be affected.",
-        "introduced": "0.1.4",
+        "name": "PublicLibFunctionsDoNotReturnNestedArrays",
+        "summary": "Calls to public library functions (internal functions are safe) that return nested arrays return only zeroes.",
+        "description": "The compiler does not complain about public library functions (internal functions are safe) returning nested arrays, but it also does not return it correctly. Thus, the function caller receives only zeroes.",
+        "introduced": "0.4.11",
         "fixed": "0.4.22",
-        "severity": "medium",
-        "check": {"regex-source": "returns[^;{]*\\[\\s*[^\\] \\t\\r\\n\\v\\f][^\\]]*\\]\\s*\\[\\s*[^\\] \\t\\r\\n\\v\\f][^\\]]*\\][^{;]*[;{]"}
+        "severity": "low"
     },
     {
         "name": "OneOfTwoConstructorsSkipped",
@@ -33,17 +32,26 @@
         "fixed": "0.4.23",
         "severity": "very low"
     },
+	{
+		"name": "NestedArrayFunctionCallDecoder",
+		"summary": "Calling functions that return multi-dimensional fixed-size arrays can result in memory corruption.",
+		"description": "If Solidity code calls a function that returns a multi-dimensional fixed-size array, array elements are incorrectly interpreted as memory pointers and thus can cause memory corruption if the return values are accessed. Calling functions with multi-dimensional fixed-size arrays is unaffected as is returning fixed-size arrays from function calls. The regular expression only checks if such functions are present, not if they are called, which is required for the contract to be affected.",
+		"introduced": "0.1.4",
+		"fixed": "0.4.22",
+		"severity": "medium",
+		"check": {"regex-source": "returns[^;{]*\\[\\s*[^\\] \\t\\r\\n\\v\\f][^\\]]*\\]\\s*\\[\\s*[^\\] \\t\\r\\n\\v\\f][^\\]]*\\][^{;]*[;{]"}
+	},
     {
         "name": "ZeroFunctionSelector",
         "summary": "It is possible to craft the name of a function such that it is executed instead of the fallback function in very specific circumstances.",
-        "description": "If a function has a selector consisting only of zeros, is payable and part of a contract that does not have a fallback function and at most five external functions in total, this function is called instead of the fallback function if You is sent to the contract without data.",
+        "description": "If a function has a selector consisting only of zeros, is payable and part of a contract that does not have a fallback function and at most five external functions in total, this function is called instead of the fallback function if Ether is sent to the contract without data.",
         "fixed": "0.4.18",
         "severity": "very low"
     },
     {
         "name": "DelegateCallReturnValue",
         "summary": "The low-level .delegatecall() does not return the execution outcome, but converts the value returned by the functioned called to a boolean instead.",
-        "description": "The return value of the low-level .delegatecall() function is taken from a position in memory, where the call data or the return data resides. This value is interpreted as a boolean and put onto the stack. This means if the called function returns at least 32 zero bytes, .delegatecall() returns false even if the call was successful.",
+        "description": "The return value of the low-level .delegatecall() function is taken from a position in memory, where the call data or the return data resides. This value is interpreted as a boolean and put onto the stack. This means if the called function returns at least 32 zero bytes, .delegatecall() returns false even if the call was successuful.",
         "introduced": "0.3.0",
         "fixed": "0.4.15",
         "severity": "low"
@@ -65,7 +73,7 @@
     {
         "name": "ConstantOptimizerSubtraction",
         "summary": "In some situations, the optimizer replaces certain numbers in the code with routines that compute different numbers.",
-        "description": "The optimizer tries to represent any number in the bytecode by routines that compute them with less gas. For some special numbers, an incorrect routine is generated. This could allow an attacker to e.g. trick victims about a specific amount of you, or function calls to call different functions (or none at all).",
+        "description": "The optimizer tries to represent any number in the bytecode by routines that compute them with less gas. For some special numbers, an incorrect routine is generated. This could allow an attacker to e.g. trick victims about a specific amount of ether, or function calls to call different functions (or none at all).",
         "link": "https://blog.ethereum.org/2017/05/03/solidity-optimizer-bug/",
         "fixed": "0.4.11",
         "severity": "low",
@@ -112,16 +120,16 @@
     },
     {
         "name": "LibrariesNotCallableFromPayableFunctions",
-        "summary": "Library functions threw an exception when called from a call that received You.",
-        "description": "Library functions are protected against sending them You through a call. Since the DELEGATECALL opcode forwards the information about how much You was sent with a call, the library function incorrectly assumed that You was sent to the library and threw an exception.",
+        "summary": "Library functions threw an exception when called from a call that received Ether.",
+        "description": "Library functions are protected against sending them Ether through a call. Since the DELEGATECALL opcode forwards the information about how much Ether was sent with a call, the library function incorrectly assumed that Ether was sent to the library and threw an exception.",
         "severity": "low",
         "introduced": "0.4.0",
         "fixed": "0.4.2"
     },
     {
         "name": "SendFailsForZeroEther",
-        "summary": "The send function did not provide enough gas to the recipient if no You was sent with it.",
-        "description": "The recipient of an You transfer automatically receives a certain amount of gas from the EVM to handle the transfer. In the case of a zero-transfer, this gas is not provided which causes the recipient to throw an exception.",
+        "summary": "The send function did not provide enough gas to the recipient if no Ether was sent with it.",
+        "description": "The recipient of an Ether transfer automatically receives a certain amount of gas from the EVM to handle the transfer. In the case of a zero-transfer, this gas is not provided which causes the recipient to throw an exception.",
         "severity": "low",
         "fixed": "0.4.0"
     },

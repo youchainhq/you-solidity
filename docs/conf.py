@@ -24,10 +24,8 @@ import re
 def setup(sphinx):
     thisdir = os.path.dirname(os.path.realpath(__file__))
     sys.path.insert(0, thisdir + '/utils')
-    from pygments_lexer_solidity import SolidityLexer
+    from SolidityLexer import SolidityLexer
     sphinx.add_lexer('Solidity', SolidityLexer())
-
-    sphinx.add_stylesheet('css/custom.css')
 
 # -- General configuration ------------------------------------------------
 
@@ -53,7 +51,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Solidity'
-copyright = '2016-2019, Ethereum'
+copyright = '2016-2018, Ethereum'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -81,7 +79,7 @@ else:
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build', 'contracts', 'types', 'examples']
+exclude_patterns = ['_build']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -114,7 +112,7 @@ highlight_language = 'Solidity'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'default'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -143,7 +141,7 @@ html_theme = 'sphinx_rtd_theme'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = []
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied

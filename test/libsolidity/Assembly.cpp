@@ -22,16 +22,16 @@
 
 #include <test/Options.h>
 
-#include <liblangutil/SourceLocation.h>
+#include <libevmasm/SourceLocation.h>
 #include <libevmasm/Assembly.h>
 
-#include <liblangutil/Scanner.h>
+#include <libsolidity/parsing/Scanner.h>
 #include <libsolidity/parsing/Parser.h>
 #include <libsolidity/analysis/NameAndTypeResolver.h>
 #include <libsolidity/codegen/Compiler.h>
 #include <libsolidity/ast/AST.h>
 #include <libsolidity/analysis/TypeChecker.h>
-#include <liblangutil/ErrorReporter.h>
+#include <libsolidity/interface/ErrorReporter.h>
 
 #include <boost/test/unit_test.hpp>
 
@@ -39,27 +39,25 @@
 #include <iostream>
 
 using namespace std;
-using namespace langutil;
 using namespace dev::eth;
 
 namespace dev
 {
 namespace solidity
 {
-class Contract;
 namespace test
 {
 
 namespace
 {
 
-eth::AssemblyItems compileContract(std::shared_ptr<CharStream> _sourceCode)
+eth::AssemblyItems compileContract(string const& _sourceCode)
 {
 	ErrorList errors;
 	ErrorReporter errorReporter(errors);
 	Parser parser(errorReporter);
 	ASTPointer<SourceUnit> sourceUnit;
-	BOOST_REQUIRE_NO_THROW(sourceUnit = parser.parse(make_shared<Scanner>(_sourceCode)));
+	BOOST_REQUIRE_NO_THROW(sourceUnit = parser.parse(make_shared<Scanner>(CharStream(_sourceCode))));
 	BOOST_CHECK(!!sourceUnit);
 
 	map<ASTNode const*, shared_ptr<DeclarationContainer>> scopes;
@@ -84,11 +82,8 @@ eth::AssemblyItems compileContract(std::shared_ptr<CharStream> _sourceCode)
 	for (ASTPointer<ASTNode> const& node: sourceUnit->nodes())
 		if (ContractDefinition* contract = dynamic_cast<ContractDefinition*>(node.get()))
 		{
-			Compiler compiler(
-				dev::test::Options::get().evmVersion(),
-				dev::test::Options::get().optimize ? OptimiserSettings::enabled() : OptimiserSettings::minimal()
-			);
-			compiler.compileContract(*contract, map<ContractDefinition const*, shared_ptr<Compiler const>>{}, bytes());
+			Compiler compiler(dev::test::Options::get().evmVersion());
+			compiler.compileContract(*contract, map<ContractDefinition const*, Assembly const*>{}, bytes());
 
 			return compiler.runtimeAssemblyItems();
 		}
@@ -108,7 +103,7 @@ void printAssemblyLocations(AssemblyItems const& _items)
 			", " <<
 			_loc.end <<
 			", make_shared<string>(\"" <<
-			_loc.source->name() <<
+			*_loc.sourceName <<
 			"\"))) +" << endl;
 	};
 
@@ -139,8 +134,7 @@ void checkAssemblyLocations(AssemblyItems const& _items, vector<SourceLocation> 
 	BOOST_CHECK_EQUAL(_items.size(), _locations.size());
 	for (size_t i = 0; i < min(_items.size(), _locations.size()); ++i)
 	{
-		if (_items[i].location().start != _locations[i].start ||
-			_items[i].location().end != _locations[i].end)
+		if (_items[i].location() != _locations[i])
 		{
 			BOOST_CHECK_MESSAGE(false, "Location mismatch for item " + to_string(i) + ". Found the following locations:");
 			printAssemblyLocations(_items);
@@ -156,47 +150,29 @@ BOOST_AUTO_TEST_SUITE(Assembly)
 
 BOOST_AUTO_TEST_CASE(location_test)
 {
-	auto sourceCode = make_shared<CharStream>(R"(
+	char const* sourceCode = R"(
 	contract test {
-		function f() public returns (uint256 a) {
+		function f() returns (uint256 a) {
 			return 16;
 		}
 	}
-	)", "");
+	)";
 	AssemblyItems items = compileContract(sourceCode);
 	bool hasShifts = dev::test::Options::get().evmVersion().hasBitwiseShifting();
-
-	auto codegenCharStream = make_shared<CharStream>("", "--CODEGEN--");
-
-	vector<SourceLocation> locations;
-	if (dev::test::Options::get().optimize)
-		locations =
-			vector<SourceLocation>(4, SourceLocation{2, 82, sourceCode}) +
-			vector<SourceLocation>(1, SourceLocation{8, 17, codegenCharStream}) +
-			vector<SourceLocation>(3, SourceLocation{5, 7, codegenCharStream}) +
-			vector<SourceLocation>(1, SourceLocation{30, 31, codegenCharStream}) +
-			vector<SourceLocation>(1, SourceLocation{27, 28, codegenCharStream}) +
-			vector<SourceLocation>(1, SourceLocation{20, 32, codegenCharStream}) +
-			vector<SourceLocation>(1, SourceLocation{5, 7, codegenCharStream}) +
-			vector<SourceLocation>(19, SourceLocation{2, 82, sourceCode}) +
-			vector<SourceLocation>(21, SourceLocation{20, 79, sourceCode}) +
-			vector<SourceLocation>(1, SourceLocation{72, 74, sourceCode}) +
-			vector<SourceLocation>(2, SourceLocation{20, 79, sourceCode});
-	else
-		locations =
-			vector<SourceLocation>(4, SourceLocation{2, 82, sourceCode}) +
-			vector<SourceLocation>(1, SourceLocation{8, 17, codegenCharStream}) +
-			vector<SourceLocation>(3, SourceLocation{5, 7, codegenCharStream}) +
-			vector<SourceLocation>(1, SourceLocation{30, 31, codegenCharStream}) +
-			vector<SourceLocation>(1, SourceLocation{27, 28, codegenCharStream}) +
-			vector<SourceLocation>(1, SourceLocation{20, 32, codegenCharStream}) +
-			vector<SourceLocation>(1, SourceLocation{5, 7, codegenCharStream}) +
-			vector<SourceLocation>(hasShifts ? 19 : 20, SourceLocation{2, 82, sourceCode}) +
-			vector<SourceLocation>(24, SourceLocation{20, 79, sourceCode}) +
-			vector<SourceLocation>(1, SourceLocation{49, 58, sourceCode}) +
-			vector<SourceLocation>(1, SourceLocation{72, 74, sourceCode}) +
-			vector<SourceLocation>(2, SourceLocation{65, 74, sourceCode}) +
-			vector<SourceLocation>(2, SourceLocation{20, 79, sourceCode});
+	vector<SourceLocation> locations =
+		vector<SourceLocation>(hasShifts ? 23 : 24, SourceLocation(2, 75, make_shared<string>(""))) +
+		vector<SourceLocation>(2, SourceLocation(20, 72, make_shared<string>(""))) +
+		vector<SourceLocation>(1, SourceLocation(8, 17, make_shared<string>("--CODEGEN--"))) +
+		vector<SourceLocation>(3, SourceLocation(5, 7, make_shared<string>("--CODEGEN--"))) +
+		vector<SourceLocation>(1, SourceLocation(30, 31, make_shared<string>("--CODEGEN--"))) +
+		vector<SourceLocation>(1, SourceLocation(27, 28, make_shared<string>("--CODEGEN--"))) +
+		vector<SourceLocation>(1, SourceLocation(20, 32, make_shared<string>("--CODEGEN--"))) +
+		vector<SourceLocation>(1, SourceLocation(5, 7, make_shared<string>("--CODEGEN--"))) +
+		vector<SourceLocation>(24, SourceLocation(20, 72, make_shared<string>(""))) +
+		vector<SourceLocation>(1, SourceLocation(42, 51, make_shared<string>(""))) +
+		vector<SourceLocation>(1, SourceLocation(65, 67, make_shared<string>(""))) +
+		vector<SourceLocation>(2, SourceLocation(58, 67, make_shared<string>(""))) +
+		vector<SourceLocation>(2, SourceLocation(20, 72, make_shared<string>("")));
 	checkAssemblyLocations(items, locations);
 }
 

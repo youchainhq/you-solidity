@@ -1,4 +1,4 @@
-pragma solidity >=0.0;
+pragma solidity ^0.4.11;
 import "../Oracles/SignedMessageOracle.sol";
 
 
@@ -26,6 +26,6 @@ contract SignedMessageOracleFactory {
     {
         signedMessageOracle = new SignedMessageOracle(descriptionHash, v, r, s);
         address oracle = ecrecover(descriptionHash, v, r, s);
-        emit SignedMessageOracleCreation(msg.sender, signedMessageOracle, oracle);
+        SignedMessageOracleCreation(msg.sender, signedMessageOracle, oracle);
     }
 }

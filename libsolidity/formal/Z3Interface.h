@@ -18,7 +18,9 @@
 #pragma once
 
 #include <libsolidity/formal/SolverInterface.h>
+
 #include <boost/noncopyable.hpp>
+
 #include <z3++.h>
 
 namespace dev
@@ -38,17 +40,16 @@ public:
 	void push() override;
 	void pop() override;
 
-	void declareVariable(std::string const& _name, Sort const& _sort) override;
+	Expression newFunction(std::string _name, Sort _domain, Sort _codomain) override;
+	Expression newInteger(std::string _name) override;
+	Expression newBool(std::string _name) override;
 
 	void addAssertion(Expression const& _expr) override;
 	std::pair<CheckResult, std::vector<std::string>> check(std::vector<Expression> const& _expressionsToEvaluate) override;
 
 private:
-	void declareFunction(std::string const& _name, Sort const& _sort);
-
 	z3::expr toZ3Expr(Expression const& _expr);
-	z3::sort z3Sort(smt::Sort const& _sort);
-	z3::sort_vector z3Sort(std::vector<smt::SortPointer> const& _sorts);
+	z3::sort z3Sort(smt::Sort _sort);
 
 	z3::context m_context;
 	z3::solver m_solver;

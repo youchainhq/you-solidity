@@ -23,7 +23,7 @@
 
 #include <test/Options.h>
 
-#include <liblangutil/EVMVersion.h>
+#include <libsolidity/interface/EVMVersion.h>
 
 #include <libdevcore/CommonData.h>
 
@@ -137,18 +137,11 @@ string IPCSocket::sendRequest(string const& _req)
 #endif
 }
 
-RPCSession& RPCSession::instance(string const& _path)
+RPCSession& RPCSession::instance(const string& _path)
 {
-	try
-	{
-		static RPCSession session(_path);
-		BOOST_REQUIRE_EQUAL(session.m_ipcSocket.path(), _path);
-		return session;
-	}
-	catch (std::exception const&)
-	{
-		BOOST_THROW_EXCEPTION(std::runtime_error("Error creating RPC session for socket: " + _path));
-	}
+	static RPCSession session(_path);
+	BOOST_REQUIRE_EQUAL(session.m_ipcSocket.path(), _path);
+	return session;
 }
 
 string RPCSession::eth_getCode(string const& _address, string const& _blockNumber)
@@ -170,11 +163,6 @@ RPCSession::TransactionReceipt RPCSession::eth_getTransactionReceipt(string cons
 	receipt.gasUsed = result["gasUsed"].asString();
 	receipt.contractAddress = result["contractAddress"].asString();
 	receipt.blockNumber = result["blockNumber"].asString();
-	if (m_receiptHasStatusField)
-	{
-		BOOST_REQUIRE(!result["status"].isNull());
-		receipt.status = result["status"].asString();
-	}
 	for (auto const& log: result["logs"])
 	{
 		LogEntry entry;
@@ -214,11 +202,6 @@ string RPCSession::eth_getStorageRoot(string const& _address, string const& _blo
 	return rpcCall("eth_getStorageRoot", { quote(address), quote(_blockNumber) }).asString();
 }
 
-string RPCSession::eth_gasPrice()
-{
-	return rpcCall("eth_gasPrice").asString();
-}
-
 void RPCSession::personal_unlockAccount(string const& _address, string const& _password, int _duration)
 {
 	BOOST_REQUIRE_MESSAGE(
@@ -237,19 +220,14 @@ string RPCSession::personal_newAccount(string const& _password)
 void RPCSession::test_setChainParams(vector<string> const& _accounts)
 {
 	string forks;
-	if (test::Options::get().evmVersion() >= langutil::EVMVersion::tangerineWhistle())
+	if (test::Options::get().evmVersion() >= solidity::EVMVersion::tangerineWhistle())
 		forks += "\"EIP150ForkBlock\": \"0x00\",\n";
-	if (test::Options::get().evmVersion() >= langutil::EVMVersion::spuriousDragon())
+	if (test::Options::get().evmVersion() >= solidity::EVMVersion::spuriousDragon())
 		forks += "\"EIP158ForkBlock\": \"0x00\",\n";
-	if (test::Options::get().evmVersion() >= langutil::EVMVersion::byzantium())
-	{
+	if (test::Options::get().evmVersion() >= solidity::EVMVersion::byzantium())
 		forks += "\"byzantiumForkBlock\": \"0x00\",\n";
-		m_receiptHasStatusField = true;
-	}
-	if (test::Options::get().evmVersion() >= langutil::EVMVersion::constantinople())
+	if (test::Options::get().evmVersion() >= solidity::EVMVersion::constantinople())
 		forks += "\"constantinopleForkBlock\": \"0x00\",\n";
-	if (test::Options::get().evmVersion() >= langutil::EVMVersion::petersburg())
-		forks += "\"constantinopleFixForkBlock\": \"0x00\",\n";
 	static string const c_configString = R"(
 	{
 		"sealEngine": "NoProof",
@@ -266,20 +244,17 @@ void RPCSession::test_setChainParams(vector<string> const& _accounts)
 			"timestamp": "0x00",
 			"parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
 			"extraData": "0x",
-			"gasLimit": "0x1000000000000",
-			"mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-			"nonce": "0x0000000000000042",
-			"difficulty": "131072"
-        },
+			"gasLimit": "0x1000000000000"
+		},
 		"accounts": {
-			"0000000000000000000000000000000000000001": { "lu": "1", "precompiled": { "name": "ecrecover", "linear": { "base": 3000, "word": 0 } } },
-			"0000000000000000000000000000000000000002": { "lu": "1", "precompiled": { "name": "sha256", "linear": { "base": 60, "word": 12 } } },
-			"0000000000000000000000000000000000000003": { "lu": "1", "precompiled": { "name": "ripemd160", "linear": { "base": 600, "word": 120 } } },
-			"0000000000000000000000000000000000000004": { "lu": "1", "precompiled": { "name": "identity", "linear": { "base": 15, "word": 3 } } },
-			"0000000000000000000000000000000000000005": { "lu": "1", "precompiled": { "name": "modexp" } },
-			"0000000000000000000000000000000000000006": { "lu": "1", "precompiled": { "name": "alt_bn128_G1_add", "linear": { "base": 500, "word": 0 } } },
-			"0000000000000000000000000000000000000007": { "lu": "1", "precompiled": { "name": "alt_bn128_G1_mul", "linear": { "base": 40000, "word": 0 } } },
-			"0000000000000000000000000000000000000008": { "lu": "1", "precompiled": { "name": "alt_bn128_pairing_product" } }
+			"0000000000000000000000000000000000000001": { "wei": "1", "precompiled": { "name": "ecrecover", "linear": { "base": 3000, "word": 0 } } },
+			"0000000000000000000000000000000000000002": { "wei": "1", "precompiled": { "name": "sha256", "linear": { "base": 60, "word": 12 } } },
+			"0000000000000000000000000000000000000003": { "wei": "1", "precompiled": { "name": "ripemd160", "linear": { "base": 600, "word": 120 } } },
+			"0000000000000000000000000000000000000004": { "wei": "1", "precompiled": { "name": "identity", "linear": { "base": 15, "word": 3 } } },
+			"0000000000000000000000000000000000000005": { "wei": "1", "precompiled": { "name": "modexp" } },
+			"0000000000000000000000000000000000000006": { "wei": "1", "precompiled": { "name": "alt_bn128_G1_add", "linear": { "base": 500, "word": 0 } } },
+			"0000000000000000000000000000000000000007": { "wei": "1", "precompiled": { "name": "alt_bn128_G1_mul", "linear": { "base": 40000, "word": 0 } } },
+			"0000000000000000000000000000000000000008": { "wei": "1", "precompiled": { "name": "alt_bn128_pairing_product" } }
 		}
 	}
 	)";
@@ -287,7 +262,7 @@ void RPCSession::test_setChainParams(vector<string> const& _accounts)
 	Json::Value config;
 	BOOST_REQUIRE(jsonParseStrict(c_configString, config));
 	for (auto const& account: _accounts)
-		config["accounts"][account]["lu"] = "0x100000000000000000000000000000000000000000";
+		config["accounts"][account]["wei"] = "0x100000000000000000000000000000000000000000";
 	test_setChainParams(jsonCompactPrint(config));
 }
 
@@ -305,7 +280,40 @@ void RPCSession::test_mineBlocks(int _number)
 {
 	u256 startBlock = fromBigEndian<u256>(fromHex(rpcCall("eth_blockNumber").asString()));
 	BOOST_REQUIRE(rpcCall("test_mineBlocks", { to_string(_number) }, true) == true);
-	BOOST_REQUIRE(fromBigEndian<u256>(fromHex(rpcCall("eth_blockNumber").asString())) == startBlock + _number);
+
+	// We auto-calibrate the time it takes to mine the transaction.
+	// It would be better to go without polling, but that would probably need a change to the test client
+
+	auto startTime = std::chrono::steady_clock::now();
+	unsigned sleepTime = m_sleepTime;
+	size_t tries = 0;
+	for (; ; ++tries)
+	{
+		std::this_thread::sleep_for(chrono::milliseconds(sleepTime));
+		auto endTime = std::chrono::steady_clock::now();
+		unsigned timeSpent = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
+		if (timeSpent > m_maxMiningTime)
+			BOOST_FAIL("Error in test_mineBlocks: block mining timeout!");
+		if (fromBigEndian<u256>(fromHex(rpcCall("eth_blockNumber").asString())) >= startBlock + _number)
+			break;
+		else
+			sleepTime *= 2;
+	}
+	if (tries > 1)
+	{
+		m_successfulMineRuns = 0;
+		m_sleepTime += 2;
+	}
+	else if (tries == 1)
+	{
+		m_successfulMineRuns++;
+		if (m_successfulMineRuns > 5)
+		{
+			m_successfulMineRuns = 0;
+			if (m_sleepTime > 2)
+				m_sleepTime--;
+		}
+	}
 }
 
 void RPCSession::test_modifyTimestamp(size_t _timestamp)
@@ -333,15 +341,7 @@ Json::Value RPCSession::rpcCall(string const& _methodName, vector<string> const&
 	Json::Value result;
 	string errorMsg;
 	if (!jsonParseStrict(reply, result, &errorMsg))
-		BOOST_FAIL("Failed to parse JSON-RPC response: " + errorMsg);
-
-	if (!result.isMember("id") || !result["id"].isUInt())
-		BOOST_FAIL("Badly formatted JSON-RPC response (missing or non-integer \"id\")");
-	if (result["id"].asUInt() != (m_rpcSequence - 1))
-		BOOST_FAIL(
-			"Response identifier mismatch. "
-			"Expected " + to_string(m_rpcSequence - 1) + " but got " + to_string(result["id"].asUInt()) + "."
-		);
+		BOOST_REQUIRE_MESSAGE(false, errorMsg);
 
 	if (result.isMember("error"))
 	{
@@ -367,7 +367,7 @@ string const& RPCSession::accountCreateIfNotExists(size_t _id)
 	return m_accounts[_id];
 }
 
-RPCSession::RPCSession(string const& _path):
+RPCSession::RPCSession(const string& _path):
 	m_ipcSocket(_path)
 {
 	accountCreate();

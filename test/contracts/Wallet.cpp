@@ -56,7 +56,7 @@ static char const* walletCode = R"DELIMITER(
 // some number (specified in constructor) of the set of owners (specified in the constructor, modifiable) before the
 // interior is executed.
 
-pragma solidity >=0.4.0 <0.6.0;
+pragma solidity ^0.4.0;
 
 contract multiowned {
 
@@ -101,7 +101,7 @@ contract multiowned {
 
 	// constructor is given number of sigs required to do protected "onlymanyowners" transactions
 	// as well as the selection of addresses capable of confirming them.
-	constructor(address[] memory _owners, uint _required) public {
+	function multiowned(address[] _owners, uint _required) {
 		m_numOwners = _owners.length + 1;
 		m_owners[1] = uint(msg.sender);
 		m_ownerIndex[uint(msg.sender)] = 1;
@@ -119,11 +119,11 @@ contract multiowned {
 		// make sure they're an owner
 		if (ownerIndex == 0) return;
 		uint ownerIndexBit = 2**ownerIndex;
-		PendingState storage pending = m_pending[_operation];
+		var pending = m_pending[_operation];
 		if (pending.ownersDone & ownerIndexBit > 0) {
 			pending.yetNeeded++;
 			pending.ownersDone -= ownerIndexBit;
-			emit Revoke(msg.sender, _operation);
+			Revoke(msg.sender, _operation);
 		}
 	}
 
@@ -137,7 +137,7 @@ contract multiowned {
 		m_owners[ownerIndex] = uint(_to);
 		m_ownerIndex[uint(_from)] = 0;
 		m_ownerIndex[uint(_to)] = ownerIndex;
-		emit OwnerChanged(_from, _to);
+		OwnerChanged(_from, _to);
 	}
 
 	function addOwner(address _owner) onlymanyowners(keccak256(msg.data)) external {
@@ -151,7 +151,7 @@ contract multiowned {
 		m_numOwners++;
 		m_owners[m_numOwners] = uint(_owner);
 		m_ownerIndex[uint(_owner)] = m_numOwners;
-		emit OwnerAdded(_owner);
+		OwnerAdded(_owner);
 	}
 
 	function removeOwner(address _owner) onlymanyowners(keccak256(msg.data)) external {
@@ -163,22 +163,22 @@ contract multiowned {
 		m_ownerIndex[uint(_owner)] = 0;
 		clearPending();
 		reorganizeOwners(); //make sure m_numOwner is equal to the number of owners and always points to the optimal free slot
-		emit OwnerRemoved(_owner);
+		OwnerRemoved(_owner);
 	}
 
 	function changeRequirement(uint _newRequired) onlymanyowners(keccak256(msg.data)) external {
 		if (_newRequired > m_numOwners) return;
 		m_required = _newRequired;
 		clearPending();
-		emit RequirementChanged(_newRequired);
+		RequirementChanged(_newRequired);
 	}
 
-	function isOwner(address _addr) public returns (bool) {
+	function isOwner(address _addr) returns (bool) {
 		return m_ownerIndex[uint(_addr)] > 0;
 	}
 
-	function hasConfirmed(bytes32 _operation, address _owner) public view returns (bool) {
-		PendingState storage pending = m_pending[_operation];
+	function hasConfirmed(bytes32 _operation, address _owner) constant returns (bool) {
+		var pending = m_pending[_operation];
 		uint ownerIndex = m_ownerIndex[uint(_owner)];
 
 		// make sure they're an owner
@@ -199,9 +199,9 @@ contract multiowned {
 		// determine what index the present sender is:
 		uint ownerIndex = m_ownerIndex[uint(msg.sender)];
 		// make sure they're an owner
-		if (ownerIndex == 0) return false;
+		if (ownerIndex == 0) return;
 
-		PendingState storage pending = m_pending[_operation];
+		var pending = m_pending[_operation];
 		// if we're not yet working on this operation, switch over and reset the confirmation status.
 		if (pending.yetNeeded == 0) {
 			// reset count of confirmations needed.
@@ -215,7 +215,7 @@ contract multiowned {
 		uint ownerIndexBit = 2**ownerIndex;
 		// make sure we (the message sender) haven't confirmed this operation previously.
 		if (pending.ownersDone & ownerIndexBit == 0) {
-			emit Confirmation(msg.sender, _operation);
+			Confirmation(msg.sender, _operation);
 			// ok - check if count is enough to go ahead.
 			if (pending.yetNeeded <= 1) {
 				// enough confirmations: reset and run interior.
@@ -228,7 +228,6 @@ contract multiowned {
 				// not enough: record that this owner in particular confirmed.
 				pending.yetNeeded--;
 				pending.ownersDone |= ownerIndexBit;
-				return false;
 			}
 		}
 	}
@@ -289,7 +288,7 @@ contract daylimit is multiowned {
 	// METHODS
 
 	// constructor - stores initial daily limit and records the present day's index.
-	constructor(uint _limit) public {
+	function daylimit(uint _limit) {
 		m_dailyLimit = _limit;
 		m_lastDay = today();
 	}
@@ -320,7 +319,7 @@ contract daylimit is multiowned {
 		return false;
 	}
 	// determines today's index.
-	function today() private view returns (uint) { return now / 1 days; }
+	function today() private constant returns (uint) { return now / 1 days; }
 
 	// FIELDS
 
@@ -348,8 +347,8 @@ contract multisig {
 
 	// TODO: document
 	function changeOwner(address _from, address _to) external;
-	function execute(address _to, uint _value, bytes calldata _data) external returns (bytes32);
-	function confirm(bytes32 _h) public returns (bool);
+	function execute(address _to, uint _value, bytes _data) external returns (bytes32);
+	function confirm(bytes32 _h) returns (bool);
 }
 
 // usage:
@@ -370,50 +369,50 @@ contract Wallet is multisig, multiowned, daylimit {
 
 	// constructor - just pass on the owner array to the multiowned and
 	// the limit to daylimit
-	constructor(address[] memory _owners, uint _required, uint _daylimit) public payable
+	function Wallet(address[] _owners, uint _required, uint _daylimit) payable
 			multiowned(_owners, _required) daylimit(_daylimit) {
 	}
 
 	// destroys the contract sending everything to `_to`.
-	function kill(address payable _to) onlymanyowners(keccak256(msg.data)) external {
+	function kill(address _to) onlymanyowners(keccak256(msg.data)) external {
 		selfdestruct(_to);
 	}
 
 	// gets called when no other function matches
-	function() external payable {
+	function() payable {
 		// just being sent some cash?
 		if (msg.value > 0)
-			emit Deposit(msg.sender, msg.value);
+			Deposit(msg.sender, msg.value);
 	}
 
-	// Outside-visible transact entry point. Executes transaction immediately if below daily spend limit.
+	// Outside-visible transact entry point. Executes transacion immediately if below daily spend limit.
 	// If not, goes into multisig process. We provide a hash on return to allow the sender to provide
 	// shortcuts for the other confirmations (allowing them to avoid replicating the _to, _value
 	// and _data arguments). They still get the option of using them if they want, anyways.
-	function execute(address _to, uint _value, bytes calldata _data) external onlyowner returns (bytes32 _r) {
+	function execute(address _to, uint _value, bytes _data) external onlyowner returns (bytes32 _r) {
 		// first, take the opportunity to check that we're under the daily limit.
 		if (underLimit(_value)) {
-			emit SingleTransact(msg.sender, _value, _to, _data);
+			SingleTransact(msg.sender, _value, _to, _data);
 			// yes - just execute the call.
 			_to.call.value(_value)(_data);
 			return 0;
 		}
 		// determine our operation hash.
-		_r = keccak256(abi.encodePacked(msg.data, block.number));
-		if (!confirm(_r) && m_txs[_r].to == 0x0000000000000000000000000000000000000000) {
+		_r = keccak256(msg.data, block.number);
+		if (!confirm(_r) && m_txs[_r].to == 0) {
 			m_txs[_r].to = _to;
 			m_txs[_r].value = _value;
 			m_txs[_r].data = _data;
-			emit ConfirmationNeeded(_r, msg.sender, _value, _to, _data);
+			ConfirmationNeeded(_r, msg.sender, _value, _to, _data);
 		}
 	}
 
 	// confirm a transaction through just the hash. we use the previous transactions map, m_txs, in order
 	// to determine the body of the transaction from the hash provided.
-	function confirm(bytes32 _h) onlymanyowners(_h) public returns (bool) {
-		if (m_txs[_h].to != 0x0000000000000000000000000000000000000000) {
+	function confirm(bytes32 _h) onlymanyowners(_h) returns (bool) {
+		if (m_txs[_h].to != 0) {
 			m_txs[_h].to.call.value(m_txs[_h].value)(m_txs[_h].data);
-			emit MultiTransact(msg.sender, _h, m_txs[_h].value, m_txs[_h].to, m_txs[_h].data);
+			MultiTransact(msg.sender, _h, m_txs[_h].value, m_txs[_h].to, m_txs[_h].data);
 			delete m_txs[_h];
 			return true;
 		}
@@ -452,7 +451,6 @@ protected:
 
 		bytes args = encodeArgs(u256(0x60), _required, _dailyLimit, u256(_owners.size()), _owners);
 		sendMessage(*s_compiledWallet + args, true, _value);
-		BOOST_REQUIRE(m_transactionSuccessful);
 		BOOST_REQUIRE(!m_output.empty());
 	}
 };
@@ -474,13 +472,13 @@ BOOST_AUTO_TEST_CASE(add_owners)
 	BOOST_REQUIRE(callContractFunction("addOwner(address)", h256(account(1), h256::AlignRight)) == encodeArgs());
 	BOOST_REQUIRE(callContractFunction("isOwner(address)", h256(account(1), h256::AlignRight)) == encodeArgs(true));
 	// now let the new owner add someone
-	sendEther(account(1), 10 * you);
+	sendEther(account(1), 10 * ether);
 	m_sender = account(1);
 	BOOST_REQUIRE(callContractFunction("addOwner(address)", h256(0x13)) == encodeArgs());
 	BOOST_REQUIRE(callContractFunction("isOwner(address)", h256(0x13)) == encodeArgs(true));
 	// and check that a non-owner cannot add a new owner
 	m_sender = account(0);
-	sendEther(account(2), 10 * you);
+	sendEther(account(2), 10 * ether);
 	m_sender = account(2);
 	BOOST_REQUIRE(callContractFunction("addOwner(address)", h256(0x20)) == encodeArgs());
 	BOOST_REQUIRE(callContractFunction("isOwner(address)", h256(0x20)) == encodeArgs(false));
@@ -559,17 +557,17 @@ BOOST_AUTO_TEST_CASE(multisig_value_transfer)
 	Address destination = Address("0x5c6d6026d3fb35cd7175fd0054ae8df50d8f8b41");
 	BOOST_CHECK_EQUAL(balanceAt(destination), 0);
 	m_sender = account(0);
-	sendEther(account(1), 10 * you);
+	sendEther(account(1), 10 * ether);
 	m_sender = account(1);
 	auto ophash = callContractFunction("execute(address,uint256,bytes)", h256(destination, h256::AlignRight), 100, 0x60, 0x00);
 	BOOST_CHECK_EQUAL(balanceAt(destination), 0);
 	m_sender = account(0);
-	sendEther(account(2), 10 * you);
+	sendEther(account(2), 10 * ether);
 	m_sender = account(2);
 	callContractFunction("confirm(bytes32)", ophash);
 	BOOST_CHECK_EQUAL(balanceAt(destination), 0);
 	m_sender = account(0);
-	sendEther(account(3), 10 * you);
+	sendEther(account(3), 10 * ether);
 	m_sender = account(3);
 	callContractFunction("confirm(bytes32)", ophash);
 	// now it should go through
@@ -590,7 +588,7 @@ BOOST_AUTO_TEST_CASE(revoke_addOwner)
 	BOOST_REQUIRE(callContractFunction("addOwner(address)", h256(0x33)) == encodeArgs());
 	BOOST_REQUIRE(callContractFunction("isOwner(address)", h256(0x33)) == encodeArgs(false));
 	m_sender = account(0);
-	sendEther(account(1), 10 * you);
+	sendEther(account(1), 10 * ether);
 	m_sender = account(1);
 	BOOST_REQUIRE(callContractFunction("addOwner(address)", h256(0x33)) == encodeArgs());
 	BOOST_REQUIRE(callContractFunction("isOwner(address)", h256(0x33)) == encodeArgs(false));
@@ -598,12 +596,12 @@ BOOST_AUTO_TEST_CASE(revoke_addOwner)
 	m_sender = deployer;
 	BOOST_REQUIRE(callContractFunction("revoke(bytes32)", opHash) == encodeArgs());
 	m_sender = account(0);
-	sendEther(account(2), 10 * you);
+	sendEther(account(2), 10 * ether);
 	m_sender = account(2);
 	BOOST_REQUIRE(callContractFunction("addOwner(address)", h256(0x33)) == encodeArgs());
 	BOOST_REQUIRE(callContractFunction("isOwner(address)", h256(0x33)) == encodeArgs(false));
 	m_sender = account(0);
-	sendEther(account(3), 10 * you);
+	sendEther(account(3), 10 * ether);
 	m_sender = account(3);
 	BOOST_REQUIRE(callContractFunction("addOwner(address)", h256(0x33)) == encodeArgs());
 	BOOST_REQUIRE(callContractFunction("isOwner(address)", h256(0x33)) == encodeArgs(true));
@@ -622,24 +620,24 @@ BOOST_AUTO_TEST_CASE(revoke_transaction)
 	Address destination = Address("0x5c6d6026d3fb35cd7175fd0054ae8df50d8f8b41");
 	BOOST_CHECK_EQUAL(balanceAt(destination), 0);
 	m_sender = account(0);
-	sendEther(account(1), 10 * you);
+	sendEther(account(1), 10 * ether);
 	m_sender = account(1);
 	auto opHash = callContractFunction("execute(address,uint256,bytes)", h256(destination, h256::AlignRight), 100, 0x60, 0x00);
 	BOOST_CHECK_EQUAL(balanceAt(destination), 0);
 	m_sender = account(0);
-	sendEther(account(2), 10 * you);
+	sendEther(account(2), 10 * ether);
 	m_sender = account(2);
 	callContractFunction("confirm(bytes32)", opHash);
 	BOOST_CHECK_EQUAL(balanceAt(destination), 0);
 	m_sender = account(0);
-	sendEther(account(1), 10 * you);
+	sendEther(account(1), 10 * ether);
 	m_sender = account(1);
 	BOOST_REQUIRE(callContractFunction("revoke(bytes32)", opHash) == encodeArgs());
 	m_sender = deployer;
 	callContractFunction("confirm(bytes32)", opHash);
 	BOOST_CHECK_EQUAL(balanceAt(destination), 0);
 	m_sender = account(0);
-	sendEther(account(3), 10 * you);
+	sendEther(account(3), 10 * ether);
 	m_sender = account(3);
 	callContractFunction("confirm(bytes32)", opHash);
 	// now it should go through
@@ -661,7 +659,7 @@ BOOST_AUTO_TEST_CASE(daylimit)
 	// try to send tx over daylimit
 	Address destination = Address("0x5c6d6026d3fb35cd7175fd0054ae8df50d8f8b41");
 	BOOST_CHECK_EQUAL(balanceAt(destination), 0);
-	sendEther(account(1), 10 * you);
+	sendEther(account(1), 10 * ether);
 	m_sender = account(1);
 	BOOST_REQUIRE(
 		callContractFunction("execute(address,uint256,bytes)", h256(destination, h256::AlignRight), 150, 0x60, 0x00) !=
@@ -670,7 +668,7 @@ BOOST_AUTO_TEST_CASE(daylimit)
 	BOOST_CHECK_EQUAL(balanceAt(destination), 0);
 	// try to send tx under daylimit by stranger
 	m_sender = account(0);
-	sendEther(account(4), 10 * you);
+	sendEther(account(4), 10 * ether);
 	m_sender = account(4);
 	BOOST_REQUIRE(
 		callContractFunction("execute(address,uint256,bytes)", h256(destination, h256::AlignRight), 90, 0x60, 0x00) ==
@@ -679,7 +677,7 @@ BOOST_AUTO_TEST_CASE(daylimit)
 	BOOST_CHECK_EQUAL(balanceAt(destination), 0);
 	// now send below limit by owner
 	m_sender = account(0);
-	sendEther(account(1), 10 * you);
+	sendEther(account(1), 10 * ether);
 	BOOST_REQUIRE(
 		callContractFunction("execute(address,uint256,bytes)", h256(destination, h256::AlignRight), 90, 0x60, 0x00) ==
 		encodeArgs(u256(0))

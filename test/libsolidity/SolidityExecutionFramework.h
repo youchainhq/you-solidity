@@ -27,8 +27,8 @@
 #include <test/ExecutionFramework.h>
 
 #include <libsolidity/interface/CompilerStack.h>
-#include <liblangutil/Exceptions.h>
-#include <liblangutil/SourceReferenceFormatter.h>
+#include <libsolidity/interface/Exceptions.h>
+#include <libsolidity/interface/SourceReferenceFormatter.h>
 
 namespace dev
 {
@@ -43,7 +43,6 @@ class SolidityExecutionFramework: public dev::test::ExecutionFramework
 
 public:
 	SolidityExecutionFramework();
-	SolidityExecutionFramework(std::string const& _ipcPath);
 
 	virtual bytes const& compileAndRunWithoutCheck(
 		std::string const& _sourceCode,
@@ -65,10 +64,7 @@ public:
 	)
 	{
 		// Silence compiler version warning
-		std::string sourceCode = "pragma solidity >=0.0;\n";
-		if (dev::test::Options::get().useABIEncoderV2 && _sourceCode.find("pragma experimental ABIEncoderV2;") == std::string::npos)
-			sourceCode += "pragma experimental ABIEncoderV2;\n";
-		sourceCode += _sourceCode;
+		std::string sourceCode = "pragma solidity >=0.0;\n" + _sourceCode;
 		m_compiler.reset(false);
 		m_compiler.addSource("", sourceCode);
 		m_compiler.setLibraries(_libraryAddresses);
@@ -76,12 +72,13 @@ public:
 		m_compiler.setOptimiserSettings(m_optimize, m_optimizeRuns);
 		if (!m_compiler.compile())
 		{
-			langutil::SourceReferenceFormatter formatter(std::cerr);
+			auto scannerFromSourceName = [&](std::string const& _sourceName) -> solidity::Scanner const& { return m_compiler.scanner(_sourceName); };
+			SourceReferenceFormatter formatter(std::cerr, scannerFromSourceName);
 
 			for (auto const& error: m_compiler.errors())
 				formatter.printExceptionInformation(
 					*error,
-					(error->type() == langutil::Error::Type::Warning) ? "Warning" : "Error"
+					(error->type() == Error::Type::Warning) ? "Warning" : "Error"
 				);
 			BOOST_ERROR("Compiling contract failed");
 		}

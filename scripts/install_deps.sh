@@ -55,7 +55,7 @@ detect_linux_distro() {
         DISTRO=$(lsb_release -is)
     elif [ -f /etc/os-release ]; then
         # extract 'foo' from NAME=foo, only on the line with NAME=foo
-        DISTRO=$(sed -n -e 's/^NAME="\?\([^"]*\)"\?$/\1/p' /etc/os-release)
+        DISTRO=$(sed -n -e 's/^NAME="\(.*\)\"/\1/p' /etc/os-release)
     elif [ -f /etc/centos-release ]; then
         DISTRO=CentOS
     else
@@ -87,12 +87,9 @@ case $(uname -s) in
             10.13)
                 echo "Installing solidity dependencies on macOS 10.13 High Sierra."
                 ;;
-            10.14)
-                echo "Installing solidity dependencies on macOS 10.14 Mojave."
-                ;;
             *)
                 echo "Unsupported macOS version."
-                echo "We only support Mavericks, Yosemite, El Capitan, Sierra, High Sierra and Mojave."
+                echo "We only support Mavericks, Yosemite, El Capitan, Sierra and High Sierra."
                 exit 1
                 ;;
         esac
@@ -136,18 +133,19 @@ case $(uname -s) in
 # Arch Linux
 #------------------------------------------------------------------------------
 
-            Arch*|ManjaroLinux)
+            Arch)
                 #Arch
                 echo "Installing solidity dependencies on Arch Linux."
 
                 # All our dependencies can be found in the Arch Linux official repositories.
                 # See https://wiki.archlinux.org/index.php/Official_repositories
+                # Also adding ethereum-git to allow for testing with the `eth` client
                 sudo pacman -Syu \
                     base-devel \
                     boost \
                     cmake \
                     git \
-                    cvc4
+                    ethereum-git \
                 ;;
 
 #------------------------------------------------------------------------------
@@ -162,7 +160,7 @@ case $(uname -s) in
                 # See https://pkgs.alpinelinux.org/
 
                 apk update
-                apk add boost-dev boost-static build-base cmake git
+                apk add boost-dev build-base cmake
 
                 ;;
 
@@ -331,7 +329,7 @@ case $(uname -s) in
                     "$install_z3"
                 if [ "$CI" = true ]; then
                     # install Z3 from PPA if the distribution does not provide it
-                    if ! dpkg -l libz3-dev > /dev/null 2>&1
+		            if ! dpkg -l libz3-dev > /dev/null 2>&1
                     then
                         sudo apt-add-repository -y ppa:hvr/z3
                         sudo apt-get -y update
@@ -352,7 +350,7 @@ case $(uname -s) in
 # CentOS needs some more testing. This is the general idea of packages
 # needed, but some tweaking/improvements can definitely happen
 #------------------------------------------------------------------------------
-            CentOS*)
+            CentOS)
                 read -p "This script will heavily modify your system in order to allow for compilation of Solidity. Are you sure? [Y/N]" -n 1 -r
                 if [[ $REPLY =~ ^[Yy]$ ]]; then
                     # Make Sure we have the EPEL repos

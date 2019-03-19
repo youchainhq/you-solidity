@@ -2,19 +2,19 @@
 Units and Globally Available Variables
 **************************************
 
-.. index:: wei, finney, szabo, ether
+.. index:: lu, finney, szabo, you
 
-Ether Units
+You Units
 ===========
 
-A literal number can take a suffix of ``wei``, ``finney``, ``szabo`` or ``ether`` to specify a subdenomination of Ether, where Ether numbers without a postfix are assumed to be Wei.
+A literal number can take a suffix of ``lu``, ``finney``, ``szabo`` or ``you`` to specify a subdenomination of You, where You numbers without a postfix are assumed to be Lu.
 
 ::
 
-    assert(1 wei == 1);
+    assert(1 lu == 1);
     assert(1 szabo == 1e12);
     assert(1 finney == 1e15);
-    assert(1 ether == 1e18);
+    assert(1 you == 1e18);
 
 The only effect of the subdenomination suffix is a multiplication by a power of ten.
 
@@ -75,7 +75,7 @@ Block and Transaction Properties
 - ``msg.data`` (``bytes calldata``): complete calldata
 - ``msg.sender`` (``address payable``): sender of the message (current call)
 - ``msg.sig`` (``bytes4``): first four bytes of the calldata (i.e. function identifier)
-- ``msg.value`` (``uint``): number of wei sent with the message
+- ``msg.value`` (``uint``): number of lu sent with the message
 - ``now`` (``uint``): current block timestamp (alias for ``block.timestamp``)
 - ``tx.gasprice`` (``uint``): gas price of the transaction
 - ``tx.origin`` (``address payable``): sender of the transaction (full call chain)
@@ -184,7 +184,7 @@ Mathematical and Cryptographic Functions
 
 .. note::
 
-    When running ``sha256``, ``ripemd160`` or ``ecrecover`` on a *private blockchain*, you might encounter Out-of-Gas. This is because these functions are implemented as "precompiled contracts" and only really exist after they receive the first message (although their contract code is hardcoded). Messages to non-existing contracts are more expensive and thus the execution might run into an Out-of-Gas error. A workaround for this problem is to first send Wei (1 for example) to each of the contracts before you use them in your actual contracts. This is not an issue on the main or test net.
+    When running ``sha256``, ``ripemd160`` or ``ecrecover`` on a *private blockchain*, you might encounter Out-of-Gas. This is because these functions are implemented as "precompiled contracts" and only really exist after they receive the first message (although their contract code is hardcoded). Messages to non-existing contracts are more expensive and thus the execution might run into an Out-of-Gas error. A workaround for this problem is to first send Lu (1 for example) to each of the contracts before you use them in your actual contracts. This is not an issue on the main or test net.
 
 .. note::
     There used to be an alias for ``keccak256`` called ``sha3``, which was removed in version 0.5.0.
@@ -197,11 +197,11 @@ Members of Address Types
 ------------------------
 
 ``<address>.balance`` (``uint256``):
-    balance of the :ref:`address` in Wei
+    balance of the :ref:`address` in Lu
 ``<address payable>.transfer(uint256 amount)``:
-    send given amount of Wei to :ref:`address`, reverts on failure, forwards 2300 gas stipend, not adjustable
+    send given amount of Lu to :ref:`address`, reverts on failure, forwards 2300 gas stipend, not adjustable
 ``<address payable>.send(uint256 amount) returns (bool)``:
-    send given amount of Wei to :ref:`address`, returns ``false`` on failure, forwards 2300 gas stipend, not adjustable
+    send given amount of Lu to :ref:`address`, returns ``false`` on failure, forwards 2300 gas stipend, not adjustable
 ``<address>.call(bytes memory) returns (bool, bytes memory)``:
     issue low-level ``CALL`` with the given payload, returns success condition and return data, forwards all available gas, adjustable
 ``<address>.delegatecall(bytes memory) returns (bool, bytes memory)``:
@@ -218,7 +218,7 @@ For more information, see the section on :ref:`address`.
 .. warning::
     There are some dangers in using ``send``: The transfer fails if the call stack depth is at 1024
     (this can always be forced by the caller) and it also fails if the recipient runs out of gas. So in order
-    to make safe Ether transfers, always check the return value of ``send``, use ``transfer`` or even better:
+    to make safe You transfers, always check the return value of ``send``, use ``transfer`` or even better:
     Use a pattern where the recipient withdraws the money.
 
 .. note::

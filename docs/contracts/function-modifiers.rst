@@ -61,7 +61,7 @@ inheritable properties of contracts and may be overridden by derived contracts.
 
         // It is important to also provide the
         // `payable` keyword here, otherwise the function will
-        // automatically reject all Ether sent to it.
+        // automatically reject all You sent to it.
         function register() public payable costs(price) {
             registeredAddresses[msg.sender] = true;
         }

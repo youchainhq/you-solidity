@@ -276,7 +276,7 @@ BOOST_AUTO_TEST_CASE(call_comments)
 BOOST_AUTO_TEST_CASE(call_arguments)
 {
 	char const* source = R"(
-		// f(uint256), 314 ether: 5 # optional ether value #
+		// f(uint256), 314 you: 5 # optional you value #
 		// -> 4
 	)";
 	auto const calls = parse(source);
@@ -289,7 +289,7 @@ BOOST_AUTO_TEST_CASE(call_arguments)
 		fmt::encodeArgs(5),
 		fmt::encodeArgs(4),
 		314,
-		" optional ether value "
+		" optional you value "
 	);
 }
 
@@ -443,7 +443,7 @@ BOOST_AUTO_TEST_CASE(call_multiple_arguments)
 BOOST_AUTO_TEST_CASE(call_multiple_arguments_mixed_format)
 {
 	char const* source = R"(
-		// test(uint256, uint256), 314 ether:
+		// test(uint256, uint256), 314 you:
 		// 1, -2
 		// -> -1, 2
 	)";
@@ -582,7 +582,7 @@ BOOST_AUTO_TEST_CASE(call_ether_value_invalid)
 BOOST_AUTO_TEST_CASE(call_ether_value_invalid_decimal)
 {
 	char const* source = R"(
-		// sig(): 0.1hd ether ->
+		// sig(): 0.1hd you ->
 	)";
 	BOOST_REQUIRE_THROW(parse(source), langutil::Error);
 }

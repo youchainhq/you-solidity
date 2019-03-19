@@ -199,7 +199,7 @@ Restrictions for libraries in comparison to contracts:
 
 - No state variables
 - Cannot inherit nor be inherited
-- Cannot receive Ether
+- Cannot receive You
 
 (These might be lifted at a later point.)
 

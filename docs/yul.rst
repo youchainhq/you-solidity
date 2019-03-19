@@ -416,17 +416,17 @@ The following functions must be available:
 +---------------------------------------------+-----------------------------------------------------------------+
 | *Execution control*                                                                                           |
 +---------------------------------------------+-----------------------------------------------------------------+
-| create(v:u256, p:u256, n:u256)              | create new contract with code mem[p..(p+n)) and send v wei      |
+| create(v:u256, p:u256, n:u256)              | create new contract with code mem[p..(p+n)) and send v lu      |
 |                                             | and return the new address                                      |
 +---------------------------------------------+-----------------------------------------------------------------+
 | create2(v:u256, p:u256, n:u256, s:u256)     | create new contract with code mem[p...(p+n)) at address         |
 |                                             | keccak256(0xff . this . s . keccak256(mem[p...(p+n)))           |
-|                                             | and send v wei and return the new address, where ``0xff`` is a  |
+|                                             | and send v lu and return the new address, where ``0xff`` is a  |
 |                                             | 8 byte value, ``this`` is the current contract's address        |
 |                                             | as a 20 byte value and ``s`` is a big-endian 256-bit value      |
 +---------------------------------------------+-----------------------------------------------------------------+
 | call(g:u256, a:u256, v:u256, in:u256,       | call contract at address a with input mem[in..(in+insize))      |
-| insize:u256, out:u256,                      | providing g gas and v wei and output area                       |
+| insize:u256, out:u256,                      | providing g gas and v lu and output area                       |
 | outsize:u256)                               | mem[out..(out+outsize)) returning 0 on error (eg. out of gas)   |
 | -> r:u256                                   | and 1 on success                                                |
 +---------------------------------------------+-----------------------------------------------------------------+
@@ -478,13 +478,13 @@ The following functions must be available:
 +---------------------------------------------+-----------------------------------------------------------------+
 | gasleft() -> gas:u256                       | gas still available to execution                                |
 +---------------------------------------------+-----------------------------------------------------------------+
-| balance(a:u256) -> v:u256                   | wei balance at address a                                        |
+| balance(a:u256) -> v:u256                   | lu balance at address a                                        |
 +---------------------------------------------+-----------------------------------------------------------------+
 | this() -> address:u256                      | address of the current contract / execution context             |
 +---------------------------------------------+-----------------------------------------------------------------+
 | caller() -> address:u256                    | call sender (excluding delegatecall)                            |
 +---------------------------------------------+-----------------------------------------------------------------+
-| callvalue() -> v:u256                       | wei sent together with the current call                         |
+| callvalue() -> v:u256                       | lu sent together with the current call                         |
 +---------------------------------------------+-----------------------------------------------------------------+
 | calldataload(p:u256) -> v:u256              | call data starting from position p (32 bytes)                   |
 +---------------------------------------------+-----------------------------------------------------------------+

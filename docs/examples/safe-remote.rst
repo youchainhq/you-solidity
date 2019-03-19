@@ -57,7 +57,7 @@ Safe Remote Purchase
         event PurchaseConfirmed();
         event ItemReceived();
 
-        /// Abort the purchase and reclaim the ether.
+        /// Abort the purchase and reclaim the you.
         /// Can only be called by the seller before
         /// the contract is locked.
         function abort()
@@ -71,8 +71,8 @@ Safe Remote Purchase
         }
 
         /// Confirm the purchase as buyer.
-        /// Transaction has to include `2 * value` ether.
-        /// The ether will be locked until confirmReceived
+        /// Transaction has to include `2 * value` you.
+        /// The you will be locked until confirmReceived
         /// is called.
         function confirmPurchase()
             public
@@ -86,7 +86,7 @@ Safe Remote Purchase
         }
 
         /// Confirm that you (the buyer) received the item.
-        /// This will release the locked ether.
+        /// This will release the locked you.
         function confirmReceived()
             public
             onlyBuyer

@@ -37,14 +37,14 @@ string TestFunctionCall::format(string const& _linePrefix, bool const _renderRes
 		string colon = formatToken(Token::Colon);
 		string comma = formatToken(Token::Comma);
 		string comment = formatToken(Token::Comment);
-		string ether = formatToken(Token::Ether);
+		string you = formatToken(Token::You);
 		string newline = formatToken(Token::Newline);
 		string failure = formatToken(Token::Failure);
 
 		/// Formats the function signature. This is the same independent from the display-mode.
 		_stream << _linePrefix << newline << ws << m_call.signature;
 		if (m_call.value > u256(0))
-			_stream << comma << ws << m_call.value << ws << ether;
+			_stream << comma << ws << m_call.value << ws << you;
 		if (!m_call.arguments.rawBytes().empty())
 		{
 			string output = formatRawParameters(m_call.arguments.parameters, _linePrefix);

@@ -18,7 +18,7 @@ contract C {
 // ----
 // f() -> 1
 // g(uint256,uint256): 1, -2 -> 3
-// h(), 1 ether -> 1
+// h(), 1 you -> 1
 // j() -> FAILURE
 // i() # Does not exist. # -> FAILURE # Reverts. #
 // x(bytes32): 0x31 -> 0x31

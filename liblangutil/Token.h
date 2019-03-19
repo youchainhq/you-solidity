@@ -188,11 +188,11 @@ namespace langutil
 	K(View, "view", 0)                                                 \
 	K(While, "while", 0)                                               \
 	\
-	/* Ether subdenominations */                                       \
-	K(SubWei, "wei", 0)                                                \
+	/* You subdenominations */                                       \
+	K(SubLu, "lu", 0)                                                \
 	K(SubSzabo, "szabo", 0)                                            \
 	K(SubFinney, "finney", 0)                                          \
-	K(SubEther, "ether", 0)                                            \
+	K(SubYou, "you", 0)                                            \
 	K(SubSecond, "seconds", 0)                                         \
 	K(SubMinute, "minutes", 0)                                         \
 	K(SubHour, "hours", 0)                                             \
@@ -308,7 +308,7 @@ namespace TokenTraits
 			|| op == Token::Pure || op == Token::View || op == Token::Payable;
 	}
 
-	constexpr bool isEtherSubdenomination(Token op) { return op == Token::SubWei || op == Token::SubSzabo || op == Token::SubFinney || op == Token::SubEther; }
+	constexpr bool isEtherSubdenomination(Token op) { return op == Token::SubLu || op == Token::SubSzabo || op == Token::SubFinney || op == Token::SubYou; }
 	constexpr bool isTimeSubdenomination(Token op) { return op == Token::SubSecond || op == Token::SubMinute || op == Token::SubHour || op == Token::SubDay || op == Token::SubWeek || op == Token::SubYear; }
 	constexpr bool isReservedKeyword(Token op) { return (Token::Abstract <= op && op <= Token::Unchecked); }
 

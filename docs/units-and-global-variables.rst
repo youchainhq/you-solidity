@@ -50,7 +50,7 @@ There are special variables and functions which always exist in the global
 namespace and are mainly used to provide information about the blockchain
 or are general-use utility functions.
 
-.. index:: abi, block, coinbase, difficulty, encode, number, block;number, timestamp, block;timestamp, msg, data, gas, sender, value, now, gas price, origin
+.. index:: abi, block, coinbase, encode, number, block;number, timestamp, block;timestamp, msg, data, gas, sender, value, now, gas price, origin
 
 
 Block and Transaction Properties
@@ -58,7 +58,6 @@ Block and Transaction Properties
 
 - ``block.blockhash(uint blockNumber) returns (bytes32)``: hash of the given block - only works for 256 most recent, excluding current, blocks - deprecated in version 0.4.22 and replaced by ``blockhash(uint blockNumber)``.
 - ``block.coinbase`` (``address``): current block miner's address
-- ``block.difficulty`` (``uint``): current block difficulty
 - ``block.gaslimit`` (``uint``): current block gaslimit
 - ``block.number`` (``uint``): current block number
 - ``block.timestamp`` (``uint``): current block timestamp as seconds since unix epoch

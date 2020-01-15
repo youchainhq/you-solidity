@@ -3164,7 +3164,6 @@ MemberList::MemberMap MagicType::nativeMembers(ContractDefinition const*) const
 			{"coinbase", make_shared<IntegerType>(160, IntegerType::Modifier::Address)},
 			{"timestamp", make_shared<IntegerType>(256)},
 			{"blockhash", make_shared<FunctionType>(strings{"uint"}, strings{"bytes32"}, FunctionType::Kind::BlockHash, false, StateMutability::View)},
-			{"difficulty", make_shared<IntegerType>(256)},
 			{"number", make_shared<IntegerType>(256)},
 			{"gaslimit", make_shared<IntegerType>(256)}
 		});

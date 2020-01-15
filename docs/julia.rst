@@ -451,8 +451,6 @@ The following functions must be available:
 +---------------------------------------------+-----------------------------------------------------------------+
 | blockcoinbase() -> address:u256             | current mining beneficiary                                      |
 +---------------------------------------------+-----------------------------------------------------------------+
-| blockdifficulty() -> difficulty:u256        | difficulty of the current block                                 |
-+---------------------------------------------+-----------------------------------------------------------------+
 | blockgaslimit() -> limit:u256               | block gas limit of the current block                            |
 +---------------------------------------------+-----------------------------------------------------------------+
 | blockhash(b:u256) -> hash:u256              | hash of block nr b - only for last 256 blocks excluding current |

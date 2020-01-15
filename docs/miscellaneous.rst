@@ -312,7 +312,7 @@ The following is the order of precedence for operators, listed in order of evalu
 | *16*       | Comma operator                      | ``,``                                      |
 +------------+-------------------------------------+--------------------------------------------+
 
-.. index:: assert, block, coinbase, difficulty, number, block;number, timestamp, block;timestamp, msg, data, gas, sender, value, now, gas price, origin, revert, require, keccak256, ripemd160, sha256, ecrecover, addmod, mulmod, cryptography, this, super, selfdestruct, balance, send
+.. index:: assert, block, coinbase, number, block;number, timestamp, block;timestamp, msg, data, gas, sender, value, now, gas price, origin, revert, require, keccak256, ripemd160, sha256, ecrecover, addmod, mulmod, cryptography, this, super, selfdestruct, balance, send
 
 Global Variables
 ================
@@ -324,7 +324,6 @@ Global Variables
 - ``abi.encodeWithSignature(string signature, ...) returns (bytes)``: Equivalent to ``abi.encodeWithSelector(bytes4(keccak256(signature), ...)```
 - ``block.blockhash(uint blockNumber) returns (bytes32)``: hash of the given block - only works for 256 most recent, excluding current, blocks - deprecated in version 0.4.22 and replaced by ``blockhash(uint blockNumber)``.
 - ``block.coinbase`` (``address``): current block miner's address
-- ``block.difficulty`` (``uint``): current block difficulty
 - ``block.gaslimit`` (``uint``): current block gaslimit
 - ``block.number`` (``uint``): current block number
 - ``block.timestamp`` (``uint``): current block timestamp

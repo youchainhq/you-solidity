@@ -1,5 +1,8 @@
 ### 0.4.26 (2020-01-20)
 
+YOUChain Features:
+ * remove op code DIFFICULTY
+
 Important Bugfixes:
  * Code Generator: Fix initialization routine of uninitialized internal function pointers in constructor context.
  * Type System: Use correct type name for contracts in event parameters when used in libraries. This affected code generation.

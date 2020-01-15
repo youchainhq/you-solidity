@@ -353,9 +353,9 @@ Global Variables
 - ``super``: the contract one level higher in the inheritance hierarchy
 - ``selfdestruct(address recipient)``: destroy the current contract, sending its funds to the given address
 - ``suicide(address recipient)``: a deprecated alias to ``selfdestruct``
-- ``<address>.balance`` (``uint256``): balance of the :ref:`address` in Wei
-- ``<address>.send(uint256 amount) returns (bool)``: send given amount of Wei to :ref:`address`, returns ``false`` on failure
-- ``<address>.transfer(uint256 amount)``: send given amount of Wei to :ref:`address`, throws on failure
+- ``<address>.balance`` (``uint256``): balance of the :ref:`address` in Lu
+- ``<address>.send(uint256 amount) returns (bool)``: send given amount of Lu to :ref:`address`, returns ``false`` on failure
+- ``<address>.transfer(uint256 amount)``: send given amount of Lu to :ref:`address`, throws on failure
 
 .. note::
     Do not rely on ``block.timestamp``, ``now`` and ``blockhash`` as a source of randomness,

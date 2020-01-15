@@ -123,7 +123,7 @@ actual contract has not been created yet.
 Functions of other contracts have to be called externally. For an external call,
 all function arguments have to be copied to memory.
 
-When calling functions of other contracts, the amount of Wei sent with the call and
+When calling functions of other contracts, the amount of Lu sent with the call and
 the gas can be specified with special options ``.value()`` and ``.gas()``, respectively::
 
     pragma solidity ^0.4.0;

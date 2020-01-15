@@ -7,7 +7,7 @@ Units and Globally Available Variables
 You Units
 ===========
 
-A literal number can take a suffix of ``lu``, ``finney``, ``szabo`` or ``you`` to convert between the subdenominations of You, where You currency numbers without a postfix are assumed to be Wei, e.g. ``2 you == 2000 finney`` evaluates to ``true``.
+A literal number can take a suffix of ``lu``, ``finney``, ``szabo`` or ``you`` to convert between the subdenominations of You, where You currency numbers without a postfix are assumed to be Lu, e.g. ``2 you == 2000 finney`` evaluates to ``true``.
 
 .. index:: time, seconds, minutes, hours, days, weeks, years
 
@@ -167,7 +167,7 @@ Note that constants will be packed using the minimum number of bytes required to
 This means that, for example, ``keccak256(0) == keccak256(uint8(0))`` and
 ``keccak256(0x12345678) == keccak256(uint32(0x12345678))``.
 
-It might be that you run into Out-of-Gas for ``sha256``, ``ripemd160`` or ``ecrecover`` on a *private blockchain*. The reason for this is that those are implemented as so-called precompiled contracts and these contracts only really exist after they received the first message (although their contract code is hardcoded). Messages to non-existing contracts are more expensive and thus the execution runs into an Out-of-Gas error. A workaround for this problem is to first send e.g. 1 Wei to each of the contracts before you use them in your actual contracts. This is not an issue on the official or test net.
+It might be that you run into Out-of-Gas for ``sha256``, ``ripemd160`` or ``ecrecover`` on a *private blockchain*. The reason for this is that those are implemented as so-called precompiled contracts and these contracts only really exist after they received the first message (although their contract code is hardcoded). Messages to non-existing contracts are more expensive and thus the execution runs into an Out-of-Gas error. A workaround for this problem is to first send e.g. 1 Lu to each of the contracts before you use them in your actual contracts. This is not an issue on the official or test net.
 
 .. index:: balance, send, transfer, call, callcode, delegatecall
 .. _address_related:
@@ -176,11 +176,11 @@ Address Related
 ---------------
 
 ``<address>.balance`` (``uint256``):
-    balance of the :ref:`address` in Wei
+    balance of the :ref:`address` in Lu
 ``<address>.transfer(uint256 amount)``:
-    send given amount of Wei to :ref:`address`, throws on failure, forwards 2300 gas stipend, not adjustable
+    send given amount of Lu to :ref:`address`, throws on failure, forwards 2300 gas stipend, not adjustable
 ``<address>.send(uint256 amount) returns (bool)``:
-    send given amount of Wei to :ref:`address`, returns ``false`` on failure, forwards 2300 gas stipend, not adjustable
+    send given amount of Lu to :ref:`address`, returns ``false`` on failure, forwards 2300 gas stipend, not adjustable
 ``<address>.call(...) returns (bool)``:
     issue low-level ``CALL``, returns ``false`` on failure, forwards all available gas, adjustable
 ``<address>.callcode(...) returns (bool)``:

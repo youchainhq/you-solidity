@@ -1,6 +1,6 @@
 FROM alpine
-MAINTAINER chriseth <chris@ethereum.org>
-#Official solidity docker image
+MAINTAINER darlzan <darlzan@foxmail.com>
+#YOUChain version: solidity docker image
 
 #Establish working directory as solidity
 WORKDIR /solidity

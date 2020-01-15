@@ -3,20 +3,17 @@ cmake_minimum_required(VERSION 3.0.0)
 set(ETH_CMAKE_DIR   "${CMAKE_CURRENT_LIST_DIR}/cmake"   CACHE PATH "The the path to the cmake directory")
 list(APPEND CMAKE_MODULE_PATH ${ETH_CMAKE_DIR})
 
-include(EthToolchains)
-
 # Set cmake_policies
 include(EthPolicy)
 eth_policy()
 
 # project name and version should be set after cmake_policy CMP0048
-set(PROJECT_VERSION "0.5.5")
-project(solidity VERSION ${PROJECT_VERSION} LANGUAGES CXX)
+set(PROJECT_VERSION "0.4.25")
+project(solidity VERSION ${PROJECT_VERSION})
 
-option(LLL "Build LLL" OFF)
 option(SOLC_LINK_STATIC "Link solc executable statically on supported platforms" OFF)
 option(LLLC_LINK_STATIC "Link lllc executable statically on supported platforms" OFF)
-option(INSTALL_LLLC "Include lllc executable in installation" ${LLL})
+option(INSTALL_LLLC "Include lllc executable in installation" OFF)
 
 # Setup cccache.
 include(EthCcache)
@@ -47,18 +44,14 @@ include(EthOptions)
 configure_project(TESTS)
 
 add_subdirectory(libdevcore)
-add_subdirectory(liblangutil)
 add_subdirectory(libevmasm)
-add_subdirectory(libyul)
 add_subdirectory(libsolidity)
 add_subdirectory(libsolc)
 
 if (NOT EMSCRIPTEN)
 	add_subdirectory(solc)
-	if (LLL)
-		add_subdirectory(liblll)
-		add_subdirectory(lllc)
-	endif()
+	add_subdirectory(liblll)
+	add_subdirectory(lllc)
 endif()
 
 if (TESTS AND NOT EMSCRIPTEN)

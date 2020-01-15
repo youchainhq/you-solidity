@@ -23,19 +23,18 @@
 #include <test/Options.h>
 
 #include <libsolidity/interface/CompilerStack.h>
-#include <liblangutil/SourceReferenceFormatter.h>
+#include <libsolidity/interface/SourceReferenceFormatter.h>
 
 #include <libsolidity/ast/AST.h>
 
-#include <liblangutil/Scanner.h>
+#include <libsolidity/parsing/Scanner.h>
 
-#include <libdevcore/Keccak256.h>
+#include <libdevcore/SHA3.h>
 
 #include <boost/test/unit_test.hpp>
 
 using namespace std;
 using namespace dev;
-using namespace langutil;
 using namespace dev::solidity;
 using namespace dev::solidity::test;
 
@@ -52,7 +51,7 @@ AnalysisFramework::parseAnalyseAndReturnError(
 	m_compiler.setEVMVersion(dev::test::Options::get().evmVersion());
 	if (!m_compiler.parse())
 	{
-		BOOST_FAIL("Parsing contract failed in analysis test suite:" + formatErrors());
+		BOOST_ERROR("Parsing contract failed in analysis test suite:" + formatErrors());
 	}
 
 	m_compiler.analyze();
@@ -127,7 +126,8 @@ string AnalysisFramework::formatError(Error const& _error) const
 {
 	return SourceReferenceFormatter::formatExceptionInformation(
 			_error,
-			(_error.type() == Error::Type::Warning) ? "Warning" : "Error"
+			(_error.type() == Error::Type::Warning) ? "Warning" : "Error",
+			[&](std::string const& _sourceName) -> solidity::Scanner const& { return m_compiler.scanner(_sourceName); }
 		);
 }
 

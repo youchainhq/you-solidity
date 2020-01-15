@@ -1,18 +1,18 @@
 /*
-	This file is part of solidity.
+    This file is part of solidity.
 
-	solidity is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
+    solidity is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-	solidity is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
+    solidity is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-	You should have received a copy of the GNU General Public License
-	along with solidity.  If not, see <http://www.gnu.org/licenses/>.
+    You should have received a copy of the GNU General Public License
+    along with solidity.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
  * @author Christian <c@ethdev.com>
@@ -23,34 +23,28 @@
 #pragma once
 
 #include <libsolidity/ast/AST.h>
-#include <liblangutil/ParserBase.h>
-
-namespace langutil
-{
-class Scanner;
-}
+#include <libsolidity/parsing/ParserBase.h>
 
 namespace dev
 {
 namespace solidity
 {
 
-class Parser: public langutil::ParserBase
+class Scanner;
+
+class Parser: public ParserBase
 {
 public:
-	explicit Parser(langutil::ErrorReporter& _errorReporter): ParserBase(_errorReporter) {}
+	explicit Parser(ErrorReporter& _errorReporter): ParserBase(_errorReporter) {}
 
-	ASTPointer<SourceUnit> parse(std::shared_ptr<langutil::Scanner> const& _scanner);
+	ASTPointer<SourceUnit> parse(std::shared_ptr<Scanner> const& _scanner);
 
 private:
 	class ASTNodeFactory;
 
 	struct VarDeclParserOptions
 	{
-		// This is actually not needed, but due to a defect in the C++ standard, we have to.
-		// https://stackoverflow.com/questions/17430377
 		VarDeclParserOptions() {}
-
 		bool allowVar = false;
 		bool isStateVariable = false;
 		bool allowIndexed = false;
@@ -73,22 +67,25 @@ private:
 
 	///@{
 	///@name Parsing functions for the AST nodes
-	void parsePragmaVersion(std::vector<Token> const& tokens, std::vector<std::string> const& literals);
 	ASTPointer<PragmaDirective> parsePragmaDirective();
 	ASTPointer<ImportDirective> parseImportDirective();
-	ContractDefinition::ContractKind parseContractKind();
-	ASTPointer<ContractDefinition> parseContractDefinition();
+	ContractDefinition::ContractKind tokenToContractKind(Token::Value _token);
+	ASTPointer<ContractDefinition> parseContractDefinition(Token::Value _expectedKind);
 	ASTPointer<InheritanceSpecifier> parseInheritanceSpecifier();
-	Declaration::Visibility parseVisibilitySpecifier();
-	StateMutability parseStateMutability();
-	FunctionHeaderParserResult parseFunctionHeader(bool _forceEmptyName, bool _allowModifiers);
-	ASTPointer<ASTNode> parseFunctionDefinitionOrFunctionTypeStateVariable();
+	Declaration::Visibility parseVisibilitySpecifier(Token::Value _token);
+	StateMutability parseStateMutability(Token::Value _token);
+	FunctionHeaderParserResult parseFunctionHeader(
+		bool _forceEmptyName,
+		bool _allowModifiers,
+		ASTString const* _contractName = nullptr
+	);
+	ASTPointer<ASTNode> parseFunctionDefinitionOrFunctionTypeStateVariable(ASTString const* _contractName);
 	ASTPointer<FunctionDefinition> parseFunctionDefinition(ASTString const* _contractName);
 	ASTPointer<StructDefinition> parseStructDefinition();
 	ASTPointer<EnumDefinition> parseEnumDefinition();
 	ASTPointer<EnumValue> parseEnumValue();
 	ASTPointer<VariableDeclaration> parseVariableDeclaration(
-		VarDeclParserOptions const& _options = {},
+		VarDeclParserOptions const& _options = VarDeclParserOptions(),
 		ASTPointer<TypeName> const& _lookAheadArrayType = ASTPointer<TypeName>()
 	);
 	ASTPointer<ModifierDefinition> parseModifierDefinition();
@@ -102,7 +99,7 @@ private:
 	ASTPointer<FunctionTypeName> parseFunctionType();
 	ASTPointer<Mapping> parseMapping();
 	ASTPointer<ParameterList> parseParameterList(
-		VarDeclParserOptions const& _options = {},
+		VarDeclParserOptions const& _options,
 		bool _allowEmpty = true
 	);
 	ASTPointer<Block> parseBlock(ASTPointer<ASTString> const& _docString = {});
@@ -153,7 +150,7 @@ private:
 	struct IndexAccessedPath
 	{
 		std::vector<ASTPointer<PrimaryExpression>> path;
-		std::vector<std::pair<ASTPointer<Expression>, langutil::SourceLocation>> indices;
+		std::vector<std::pair<ASTPointer<Expression>, SourceLocation>> indices;
 		bool empty() const;
 	};
 

@@ -8,8 +8,5 @@ contract C {
         uint a;
         (c, a) = f();
     }
-    function h() internal view returns (S storage, S storage) {
-        return (s,s);
-    }
 }
 // ----

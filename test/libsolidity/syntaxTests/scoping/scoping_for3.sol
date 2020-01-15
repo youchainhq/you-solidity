@@ -1,3 +1,4 @@
+pragma experimental "v0.5.0";
 contract test {
     function f() pure public {
         for (uint x = 0; x < 10; x ++){
@@ -7,4 +8,4 @@ contract test {
     }
 }
 // ----
-// DeclarationError: (124-125): Undeclared identifier.
+// DeclarationError: (154-155): Undeclared identifier.

@@ -21,8 +21,6 @@
 
 #include "JSON.h"
 
-#include "CommonIO.h"
-
 #include <sstream>
 #include <map>
 #include <memory>
@@ -112,11 +110,5 @@ bool jsonParse(string const& _input, Json::Value& _json, string *_errs /* = null
 	static Json::CharReaderBuilder readerBuilder;
 	return parse(readerBuilder, _input, _json, _errs);
 }
-
-bool jsonParseFile(string const& _fileName, Json::Value& _json, string *_errs /* = nullptr */)
-{
-	return jsonParse(readFileAsString(_fileName), _json, _errs);
-}
-
 
 } // namespace dev

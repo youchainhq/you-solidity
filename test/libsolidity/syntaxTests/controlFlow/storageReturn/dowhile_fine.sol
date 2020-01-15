@@ -23,10 +23,14 @@ contract C {
     }
     function k() internal view returns (S storage c) {
         do {
-            c = s;
-            continue;
+            if (s.f) {
+                continue;
+                break;
+            }
+            else {
+                c = s;
+            }
         } while(false);
     }
 }
 // ----
-// Warning: (567-572): Unreachable code.

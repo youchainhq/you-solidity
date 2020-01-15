@@ -1,14 +1,5 @@
-set(sources
-	CodeFragment.cpp
-	CodeFragment.h
-	Compiler.cpp
-	Compiler.h
-	CompilerState.cpp
-	CompilerState.h
-	Exceptions.h
-	Parser.cpp
-	Parser.h
-)
+file(GLOB sources "*.cpp")
+file(GLOB headers "*.h")
 
-add_library(lll ${sources})
+add_library(lll ${sources} ${headers})
 target_link_libraries(lll PUBLIC evmasm devcore)

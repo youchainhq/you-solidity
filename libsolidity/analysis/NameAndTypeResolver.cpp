@@ -1,18 +1,18 @@
 /*
-	This file is part of solidity.
+    This file is part of solidity.
 
-	solidity is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
+    solidity is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-	solidity is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
+    solidity is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-	You should have received a copy of the GNU General Public License
-	along with solidity.  If not, see <http://www.gnu.org/licenses/>.
+    You should have received a copy of the GNU General Public License
+    along with solidity.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
  * @author Christian <c@ethdev.com>
@@ -22,14 +22,14 @@
 
 #include <libsolidity/analysis/NameAndTypeResolver.h>
 
-#include <libsolidity/analysis/TypeChecker.h>
 #include <libsolidity/ast/AST.h>
-#include <liblangutil/ErrorReporter.h>
+#include <libsolidity/analysis/TypeChecker.h>
+#include <libsolidity/interface/ErrorReporter.h>
 #include <libdevcore/StringUtils.h>
+
 #include <boost/algorithm/string.hpp>
 
 using namespace std;
-using namespace langutil;
 
 namespace dev
 {
@@ -54,12 +54,13 @@ NameAndTypeResolver::NameAndTypeResolver(
 
 bool NameAndTypeResolver::registerDeclarations(SourceUnit& _sourceUnit, ASTNode const* _currentScope)
 {
+	bool useC99Scoping = _sourceUnit.annotation().experimentalFeatures.count(ExperimentalFeature::V050);
 	// The helper registers all declarations in m_scopes as a side-effect of its construction.
 	try
 	{
-		DeclarationRegistrationHelper registrar(m_scopes, _sourceUnit, m_errorReporter, _currentScope);
+		DeclarationRegistrationHelper registrar(m_scopes, _sourceUnit, useC99Scoping, m_errorReporter, _currentScope);
 	}
-	catch (langutil::FatalError const&)
+	catch (FatalError const&)
 	{
 		if (m_errorReporter.errors().empty())
 			throw; // Something is weird here, rather throw again.
@@ -129,7 +130,7 @@ bool NameAndTypeResolver::resolveNamesAndTypes(ASTNode& _node, bool _resolveInsi
 	{
 		return resolveNamesAndTypesInternal(_node, _resolveInsideCode);
 	}
-	catch (langutil::FatalError const&)
+	catch (FatalError const&)
 	{
 		if (m_errorReporter.errors().empty())
 			throw; // Something is weird here, rather throw again.
@@ -144,7 +145,7 @@ bool NameAndTypeResolver::updateDeclaration(Declaration const& _declaration)
 		m_scopes[nullptr]->registerDeclaration(_declaration, nullptr, false, true);
 		solAssert(_declaration.scope() == nullptr, "Updated declaration outside global scope.");
 	}
-	catch (langutil::FatalError const&)
+	catch (FatalError const&)
 	{
 		if (m_errorReporter.errors().empty())
 			throw; // Something is weird here, rather throw again.
@@ -156,13 +157,7 @@ bool NameAndTypeResolver::updateDeclaration(Declaration const& _declaration)
 void NameAndTypeResolver::activateVariable(string const& _name)
 {
 	solAssert(m_currentScope, "");
-	// Scoped local variables are invisible before activation.
-	// When a local variable is activated, its name is removed
-	// from a scope's invisible variables.
-	// This is used to avoid activation of variables of same name
-	// in the same scope (an error is returned).
-	if (m_currentScope->isInvisible(_name))
-		m_currentScope->activateVariable(_name);
+	m_currentScope->activateVariable(_name);
 }
 
 vector<Declaration const*> NameAndTypeResolver::resolveName(ASTString const& _name, ASTNode const* _scope) const
@@ -231,7 +226,7 @@ vector<Declaration const*> NameAndTypeResolver::cleanedDeclarations(
 				shared_ptr<FunctionType const> newFunctionType { d->functionType(false) };
 				if (!newFunctionType)
 					newFunctionType = d->functionType(true);
-				return newFunctionType && functionType->hasEqualParameterTypes(*newFunctionType);
+				return newFunctionType && functionType->hasEqualArgumentTypes(*newFunctionType);
 			}
 		))
 			uniqueFunctions.push_back(declaration);
@@ -295,7 +290,10 @@ bool NameAndTypeResolver::resolveNamesAndTypesInternal(ASTNode& _node, bool _res
 		{
 			setScope(contract);
 			if (!resolveNamesAndTypes(*node, false))
+			{
 				success = false;
+				break;
+			}
 		}
 
 		if (!success)
@@ -451,9 +449,11 @@ string NameAndTypeResolver::similarNameSuggestions(ASTString const& _name) const
 DeclarationRegistrationHelper::DeclarationRegistrationHelper(
 	map<ASTNode const*, shared_ptr<DeclarationContainer>>& _scopes,
 	ASTNode& _astRoot,
+	bool _useC99Scoping,
 	ErrorReporter& _errorReporter,
 	ASTNode const* _currentScope
 ):
+	m_useC99Scoping(_useC99Scoping),
 	m_scopes(_scopes),
 	m_currentScope(_currentScope),
 	m_errorReporter(_errorReporter)
@@ -491,9 +491,9 @@ bool DeclarationRegistrationHelper::registerDeclaration(
 		Declaration const* conflictingDeclaration = _container.conflictingDeclaration(_declaration, _name);
 		solAssert(conflictingDeclaration, "");
 		bool const comparable =
-			_errorLocation->source &&
-			conflictingDeclaration->location().source &&
-			_errorLocation->source->name() == conflictingDeclaration->location().source->name();
+			_errorLocation->sourceName &&
+			conflictingDeclaration->location().sourceName &&
+			*_errorLocation->sourceName == *conflictingDeclaration->location().sourceName;
 		if (comparable && _errorLocation->start < conflictingDeclaration->location().start)
 		{
 			firstDeclarationLocation = *_errorLocation;
@@ -626,39 +626,32 @@ void DeclarationRegistrationHelper::endVisit(ModifierDefinition&)
 	closeCurrentScope();
 }
 
-bool DeclarationRegistrationHelper::visit(FunctionTypeName& _funTypeName)
-{
-	enterNewSubScope(_funTypeName);
-	return true;
-}
-
-void DeclarationRegistrationHelper::endVisit(FunctionTypeName&)
-{
-	closeCurrentScope();
-}
-
 bool DeclarationRegistrationHelper::visit(Block& _block)
 {
 	_block.setScope(m_currentScope);
-	enterNewSubScope(_block);
+	if (m_useC99Scoping)
+		enterNewSubScope(_block);
 	return true;
 }
 
 void DeclarationRegistrationHelper::endVisit(Block&)
 {
-	closeCurrentScope();
+	if (m_useC99Scoping)
+		closeCurrentScope();
 }
 
 bool DeclarationRegistrationHelper::visit(ForStatement& _for)
 {
 	_for.setScope(m_currentScope);
-	enterNewSubScope(_for);
+	if (m_useC99Scoping)
+		enterNewSubScope(_for);
 	return true;
 }
 
 void DeclarationRegistrationHelper::endVisit(ForStatement&)
 {
-	closeCurrentScope();
+	if (m_useC99Scoping)
+		closeCurrentScope();
 }
 
 void DeclarationRegistrationHelper::endVisit(VariableDeclarationStatement& _variableDeclarationStatement)
@@ -718,9 +711,14 @@ void DeclarationRegistrationHelper::registerDeclaration(Declaration& _declaratio
 		dynamic_cast<EventDefinition const*>(m_currentScope)
 	)
 		warnAboutShadowing = false;
+	// Do not warn about the constructor shadowing the contract.
+	if (auto fun = dynamic_cast<FunctionDefinition const*>(&_declaration))
+		if (fun->isConstructor())
+			warnAboutShadowing = false;
 
-	// Register declaration as inactive if we are in block scope.
+	// Register declaration as inactive if we are in block scope and C99 mode.
 	bool inactive =
+		m_useC99Scoping &&
 		(dynamic_cast<Block const*>(m_currentScope) || dynamic_cast<ForStatement const*>(m_currentScope));
 
 	registerDeclaration(*m_scopes[m_currentScope], _declaration, nullptr, nullptr, warnAboutShadowing, inactive, m_errorReporter);

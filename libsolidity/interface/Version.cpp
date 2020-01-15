@@ -21,12 +21,11 @@
  */
 
 #include <libsolidity/interface/Version.h>
-
-#include <liblangutil/Exceptions.h>
+#include <string>
 #include <libdevcore/CommonData.h>
 #include <libdevcore/Common.h>
+#include <libsolidity/interface/Exceptions.h>
 #include <solidity/BuildInfo.h>
-#include <string>
 
 using namespace dev;
 using namespace dev::solidity;
@@ -56,13 +55,13 @@ bytes dev::solidity::binaryVersion()
 			ret = ret * 10 + (VersionString[i] - '0');
 		return ret;
 	};
-	ret.push_back(uint8_t(parseDecimal()));
+	ret.push_back(byte(parseDecimal()));
 	solAssert(i < VersionString.size() && VersionString[i] == '.', "");
 	++i;
-	ret.push_back(uint8_t(parseDecimal()));
+	ret.push_back(byte(parseDecimal()));
 	solAssert(i < VersionString.size() && VersionString[i] == '.', "");
 	++i;
-	ret.push_back(uint8_t(parseDecimal()));
+	ret.push_back(byte(parseDecimal()));
 	solAssert(i < VersionString.size() && (VersionString[i] == '-' || VersionString[i] == '+'), "");
 	++i;
 	size_t commitpos = VersionString.find("commit.");

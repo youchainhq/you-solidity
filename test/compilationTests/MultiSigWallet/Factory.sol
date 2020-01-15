@@ -10,7 +10,7 @@ contract Factory {
     /// @return Returns number of instantiations by creator.
     function getInstantiationCount(address creator)
         public
-        view
+        constant
         returns (uint)
     {
         return instantiations[creator].length;
@@ -23,6 +23,6 @@ contract Factory {
     {
         isInstantiation[instantiation] = true;
         instantiations[msg.sender].push(instantiation);
-        emit ContractInstantiation(msg.sender, instantiation);
+        ContractInstantiation(msg.sender, instantiation);
     }
 }

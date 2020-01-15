@@ -1,4 +1,4 @@
-pragma solidity >=0.0;
+pragma solidity ^0.4.4;
 import "Factory.sol";
 import "MultiSigWalletWithDailyLimit.sol";
 
@@ -12,11 +12,11 @@ contract MultiSigWalletWithDailyLimitFactory is Factory {
     /// @param _required Number of required confirmations.
     /// @param _dailyLimit Amount in lu, which can be withdrawn without confirmations on a daily basis.
     /// @return Returns wallet address.
-    function create(address[] memory _owners, uint _required, uint _dailyLimit)
+    function create(address[] _owners, uint _required, uint _dailyLimit)
         public
         returns (address wallet)
     {
-        wallet = address(new MultiSigWalletWithDailyLimit(_owners, _required, _dailyLimit));
+        wallet = new MultiSigWalletWithDailyLimit(_owners, _required, _dailyLimit);
         register(wallet);
     }
 }

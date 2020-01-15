@@ -31,7 +31,7 @@ namespace sp = boost::spirit;
 
 namespace dev
 {
-namespace lll
+namespace eth
 {
 
 void killBigints(sp::utree const& _this);

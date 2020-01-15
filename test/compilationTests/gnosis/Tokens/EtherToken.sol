@@ -1,4 +1,4 @@
-pragma solidity >=0.0;
+pragma solidity ^0.4.11;
 import "../Tokens/StandardToken.sol";
 
 
@@ -30,7 +30,7 @@ contract EtherToken is StandardToken {
     {
         balances[msg.sender] = balances[msg.sender].add(msg.value);
         totalTokens = totalTokens.add(msg.value);
-        emit Deposit(msg.sender, msg.value);
+        Deposit(msg.sender, msg.value);
     }
 
     /// @dev Sells tokens in exchange for You, exchanging them 1:1
@@ -42,6 +42,6 @@ contract EtherToken is StandardToken {
         balances[msg.sender] = balances[msg.sender].sub(value);
         totalTokens = totalTokens.sub(value);
         msg.sender.transfer(value);
-        emit Withdrawal(msg.sender, value);
+        Withdrawal(msg.sender, value);
     }
 }

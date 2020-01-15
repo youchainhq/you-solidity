@@ -1,3 +1,4 @@
+pragma experimental "v0.5.0";
 contract test {
     function f() pure public {
         for (;; y++){
@@ -6,4 +7,4 @@ contract test {
     }
 }
 // ----
-// DeclarationError: (63-64): Undeclared identifier.
+// DeclarationError: (93-94): Undeclared identifier.

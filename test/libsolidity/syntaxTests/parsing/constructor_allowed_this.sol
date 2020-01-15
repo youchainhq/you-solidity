@@ -3,9 +3,9 @@ contract A {
     }
 }
 contract B {
-    constructor(C) public {
+    constructor(address) public {
     }
-    function b(C) public returns (A) {
+    function b(address) public returns (A) {
         return new A();
     }
 }

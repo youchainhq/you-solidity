@@ -20,25 +20,21 @@
  * Gas consumption estimator working alongside the AST.
  */
 
-#include <libsolidity/interface/GasEstimator.h>
-
+#include "GasEstimator.h"
+#include <map>
+#include <functional>
+#include <memory>
+#include <libdevcore/SHA3.h>
+#include <libevmasm/ControlFlowGraph.h>
+#include <libevmasm/KnownState.h>
+#include <libevmasm/PathGasMeter.h>
 #include <libsolidity/ast/AST.h>
 #include <libsolidity/ast/ASTVisitor.h>
 #include <libsolidity/codegen/CompilerUtils.h>
 
-#include <libevmasm/ControlFlowGraph.h>
-#include <libevmasm/KnownState.h>
-#include <libevmasm/PathGasMeter.h>
-#include <libdevcore/Keccak256.h>
-
-#include <functional>
-#include <map>
-#include <memory>
-
 using namespace std;
 using namespace dev;
 using namespace dev::eth;
-using namespace langutil;
 using namespace dev::solidity;
 
 GasEstimator::ASTGasConsumptionSelfAccumulated GasEstimator::structuralEstimation(
@@ -164,7 +160,8 @@ GasEstimator::GasConsumption GasEstimator::functionalEstimation(
 		);
 	}
 
-	return PathGasMeter::estimateMax(_items, m_evmVersion, 0, state);
+	PathGasMeter meter(_items, m_evmVersion);
+	return meter.estimateMax(0, state);
 }
 
 GasEstimator::GasConsumption GasEstimator::functionalEstimation(
@@ -186,7 +183,7 @@ GasEstimator::GasConsumption GasEstimator::functionalEstimation(
 	if (parametersSize > 0)
 		state->feedItem(swapInstruction(parametersSize));
 
-	return PathGasMeter::estimateMax(_items, m_evmVersion, _offset, state);
+	return PathGasMeter(_items, m_evmVersion).estimateMax(_offset, state);
 }
 
 set<ASTNode const*> GasEstimator::finestNodesAtLocation(

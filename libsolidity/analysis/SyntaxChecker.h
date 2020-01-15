@@ -23,11 +23,6 @@
 #include <libsolidity/ast/ASTForward.h>
 #include <libsolidity/ast/ASTVisitor.h>
 
-namespace langutil
-{
-class ErrorReporter;
-}
-
 namespace dev
 {
 namespace solidity
@@ -44,49 +39,41 @@ class SyntaxChecker: private ASTConstVisitor
 {
 public:
 	/// @param _errorReporter provides the error logging functionality.
-	SyntaxChecker(langutil::ErrorReporter& _errorReporter): m_errorReporter(_errorReporter) {}
+	SyntaxChecker(ErrorReporter& _errorReporter): m_errorReporter(_errorReporter) {}
 
 	bool checkSyntax(ASTNode const& _astRoot);
 
 private:
 
-	bool visit(SourceUnit const& _sourceUnit) override;
-	void endVisit(SourceUnit const& _sourceUnit) override;
-	bool visit(PragmaDirective const& _pragma) override;
+	virtual bool visit(SourceUnit const& _sourceUnit) override;
+	virtual void endVisit(SourceUnit const& _sourceUnit) override;
+	virtual bool visit(PragmaDirective const& _pragma) override;
 
-	bool visit(ModifierDefinition const& _modifier) override;
-	void endVisit(ModifierDefinition const& _modifier) override;
+	virtual bool visit(ModifierDefinition const& _modifier) override;
+	virtual void endVisit(ModifierDefinition const& _modifier) override;
 
-	/// Reports an error if _statement is a VariableDeclarationStatement.
-	/// Used by if/while/for to check for single statement variable declarations
-	/// without a block.
-	void checkSingleStatementVariableDeclaration(ASTNode const& _statement);
+	virtual bool visit(WhileStatement const& _whileStatement) override;
+	virtual void endVisit(WhileStatement const& _whileStatement) override;
+	virtual bool visit(ForStatement const& _forStatement) override;
+	virtual void endVisit(ForStatement const& _forStatement) override;
 
-	bool visit(IfStatement const& _ifStatement) override;
-	bool visit(WhileStatement const& _whileStatement) override;
-	void endVisit(WhileStatement const& _whileStatement) override;
-	bool visit(ForStatement const& _forStatement) override;
-	void endVisit(ForStatement const& _forStatement) override;
+	virtual bool visit(Continue const& _continueStatement) override;
+	virtual bool visit(Break const& _breakStatement) override;
 
-	bool visit(Continue const& _continueStatement) override;
-	bool visit(Break const& _breakStatement) override;
+	virtual bool visit(Throw const& _throwStatement) override;
 
-	bool visit(Throw const& _throwStatement) override;
+	virtual bool visit(UnaryOperation const& _operation) override;
 
-	bool visit(UnaryOperation const& _operation) override;
+	virtual bool visit(PlaceholderStatement const& _placeholderStatement) override;
 
-	bool visit(PlaceholderStatement const& _placeholderStatement) override;
+	virtual bool visit(FunctionDefinition const& _function) override;
+	virtual bool visit(FunctionTypeName const& _node) override;
 
-	bool visit(ContractDefinition const& _contract) override;
-	bool visit(FunctionDefinition const& _function) override;
-	bool visit(FunctionTypeName const& _node) override;
+	virtual bool visit(VariableDeclaration const& _declaration) override;
 
-	bool visit(VariableDeclarationStatement const& _statement) override;
+	virtual bool visit(StructDefinition const& _struct) override;
 
-	bool visit(StructDefinition const& _struct) override;
-	bool visit(Literal const& _literal) override;
-
-	langutil::ErrorReporter& m_errorReporter;
+	ErrorReporter& m_errorReporter;
 
 	/// Flag that indicates whether a function modifier actually contains '_'.
 	bool m_placeholderFound = false;
@@ -95,7 +82,6 @@ private:
 	bool m_versionPragmaFound = false;
 
 	int m_inLoopDepth = 0;
-	bool m_isInterface = false;
 
 	SourceUnit const* m_sourceUnit = nullptr;
 };

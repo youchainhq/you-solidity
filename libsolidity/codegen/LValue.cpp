@@ -21,15 +21,13 @@
  */
 
 #include <libsolidity/codegen/LValue.h>
-
-#include <libsolidity/ast/AST.h>
-#include <libsolidity/ast/Types.h>
-#include <libsolidity/codegen/CompilerUtils.h>
 #include <libevmasm/Instruction.h>
+#include <libsolidity/ast/Types.h>
+#include <libsolidity/ast/AST.h>
+#include <libsolidity/codegen/CompilerUtils.h>
 
 using namespace std;
 using namespace dev;
-using namespace langutil;
 using namespace solidity;
 
 
@@ -136,7 +134,8 @@ void MemoryItem::storeValue(Type const& _sourceType, SourceLocation const&, bool
 void MemoryItem::setToZero(SourceLocation const&, bool _removeReference) const
 {
 	CompilerUtils utils(m_context);
-	solAssert(_removeReference, "");
+	if (!_removeReference)
+		m_context << Instruction::DUP1;
 	utils.pushZeroValue(*m_dataType);
 	utils.storeInMemoryDynamic(*m_dataType, m_padded);
 	m_context << Instruction::POP;
@@ -461,7 +460,8 @@ void StorageByteArrayElement::storeValue(Type const&, SourceLocation const&, boo
 void StorageByteArrayElement::setToZero(SourceLocation const&, bool _removeReference) const
 {
 	// stack: ref byte_number
-	solAssert(_removeReference, "");
+	if (!_removeReference)
+		m_context << Instruction::DUP2 << Instruction::DUP2;
 	m_context << u256(31) << Instruction::SUB << u256(0x100) << Instruction::EXP;
 	// stack: ref (1<<(8*(31-byte_number)))
 	m_context << Instruction::DUP2 << Instruction::SLOAD;
@@ -473,7 +473,7 @@ void StorageByteArrayElement::setToZero(SourceLocation const&, bool _removeRefer
 	m_context << Instruction::SWAP1 << Instruction::SSTORE;
 }
 
-StorageArrayLength::StorageArrayLength(CompilerContext& _compilerContext, ArrayType const& _arrayType):
+StorageArrayLength::StorageArrayLength(CompilerContext& _compilerContext, const ArrayType& _arrayType):
 	LValue(_compilerContext, _arrayType.memberType("length").get()),
 	m_arrayType(_arrayType)
 {
@@ -498,7 +498,8 @@ void StorageArrayLength::storeValue(Type const&, SourceLocation const&, bool _mo
 
 void StorageArrayLength::setToZero(SourceLocation const&, bool _removeReference) const
 {
-	solAssert(_removeReference, "");
+	if (!_removeReference)
+		m_context << Instruction::DUP1;
 	ArrayUtils(m_context).clearDynamicArray(m_arrayType);
 }
 
@@ -520,9 +521,24 @@ unsigned TupleObject::sizeOnStack() const
 	return size;
 }
 
-void TupleObject::retrieveValue(SourceLocation const&, bool) const
+void TupleObject::retrieveValue(SourceLocation const& _location, bool _remove) const
 {
-	solAssert(false, "Tried to retrieve value of tuple.");
+	unsigned initialDepth = sizeOnStack();
+	unsigned initialStack = m_context.stackHeight();
+	for (auto const& lv: m_lvalues)
+		if (lv)
+		{
+			solAssert(initialDepth + m_context.stackHeight() >= initialStack, "");
+			unsigned depth = initialDepth + m_context.stackHeight() - initialStack;
+			if (lv->sizeOnStack() > 0)
+			{
+				if (_remove && depth > lv->sizeOnStack())
+					CompilerUtils(m_context).moveToStackTop(depth, depth - lv->sizeOnStack());
+				else if (!_remove && depth > 0)
+					CompilerUtils(m_context).copyToStackTop(depth, lv->sizeOnStack());
+			}
+			lv->retrieveValue(_location, true);
+		}
 }
 
 void TupleObject::storeValue(Type const& _sourceType, SourceLocation const& _location, bool) const
@@ -553,7 +569,24 @@ void TupleObject::storeValue(Type const& _sourceType, SourceLocation const& _loc
 	CompilerUtils(m_context).popStackElement(_sourceType);
 }
 
-void TupleObject::setToZero(SourceLocation const&, bool) const
+void TupleObject::setToZero(SourceLocation const& _location, bool _removeReference) const
 {
-	solAssert(false, "Tried to delete tuple.");
+	if (_removeReference)
+	{
+		for (size_t i = 0; i < m_lvalues.size(); ++i)
+			if (m_lvalues[m_lvalues.size() - i])
+				m_lvalues[m_lvalues.size() - i]->setToZero(_location, true);
+	}
+	else
+	{
+		unsigned depth = sizeOnStack();
+		for (auto const& val: m_lvalues)
+			if (val)
+			{
+				if (val->sizeOnStack() > 0)
+					CompilerUtils(m_context).copyToStackTop(depth, val->sizeOnStack());
+				val->setToZero(_location, false);
+				depth -= val->sizeOnStack();
+			}
+	}
 }

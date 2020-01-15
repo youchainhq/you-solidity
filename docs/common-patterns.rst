@@ -13,11 +13,11 @@ Withdrawal from Contracts
 The recommended method of sending funds after an effect
 is using the withdrawal pattern. Although the most intuitive
 method of sending You, as a result of an effect, is a
-direct ``transfer`` call, this is not recommended as it
+direct ``send`` call, this is not recommended as it
 introduces a potential security risk. You may read
 more about this on the :ref:`security_considerations` page.
 
-The following is an example of the withdrawal pattern in practice in
+This is an example of the withdrawal pattern in practice in
 a contract where the goal is to send the most money to the
 contract in order to become the "richest", inspired by
 `King of the You <https://www.kingoftheether.com/>`_.
@@ -28,7 +28,7 @@ become the new richest.
 
 ::
 
-    pragma solidity ^0.5.0;
+    pragma solidity ^0.4.11;
 
     contract WithdrawalContract {
         address public richest;
@@ -36,7 +36,7 @@ become the new richest.
 
         mapping (address => uint) pendingWithdrawals;
 
-        constructor() public payable {
+        function WithdrawalContract() public payable {
             richest = msg.sender;
             mostSent = msg.value;
         }
@@ -65,13 +65,13 @@ This is as opposed to the more intuitive sending pattern:
 
 ::
 
-    pragma solidity ^0.5.0;
+    pragma solidity ^0.4.11;
 
     contract SendContract {
-        address payable public richest;
+        address public richest;
         uint public mostSent;
 
-        constructor() public payable {
+        function SendContract() public payable {
             richest = msg.sender;
             mostSent = msg.value;
         }
@@ -93,7 +93,7 @@ Notice that, in this example, an attacker could trap the
 contract into an unusable state by causing ``richest`` to be
 the address of a contract that has a fallback function
 which fails (e.g. by using ``revert()`` or by just
-consuming more than the 2300 gas stipend transferred to them). That way,
+consuming more than the 2300 gas stipend). That way,
 whenever ``transfer`` is called to deliver funds to the
 "poisoned" contract, it will fail and thus also ``becomeRichest``
 will fail, with the contract being stuck forever.
@@ -117,7 +117,7 @@ to read the data, so will everyone else.
 
 You can restrict read access to your contract's state
 by **other contracts**. That is actually the default
-unless you declare your state variables ``public``.
+unless you declare make your state variables ``public``.
 
 Furthermore, you can restrict who can make modifications
 to your contract's state or call your contract's
@@ -130,7 +130,7 @@ restrictions highly readable.
 
 ::
 
-    pragma solidity >=0.4.22 <0.6.0;
+    pragma solidity ^0.4.22;
 
     contract AccessRestriction {
         // These will be assigned at the construction
@@ -198,7 +198,7 @@ restrictions highly readable.
             );
             _;
             if (msg.value > _amount)
-                msg.sender.transfer(msg.value - _amount);
+                msg.sender.send(msg.value - _amount);
         }
 
         function forceOwnerChange(address _newOwner)
@@ -282,7 +282,7 @@ function finishes.
 
 ::
 
-    pragma solidity >=0.4.22 <0.6.0;
+    pragma solidity ^0.4.22;
 
     contract StateMachine {
         enum Stages {

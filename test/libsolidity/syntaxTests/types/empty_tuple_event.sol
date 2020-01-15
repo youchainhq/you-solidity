@@ -1,8 +1,10 @@
+pragma solidity ^0.4.3;
 contract C {
     event SomeEvent();
     function a() public {
-        (emit SomeEvent(), 7);
+        (SomeEvent(), 7);
     }
 }
 // ----
-// ParserError: (71-75): Expected primary expression.
+// Warning: (95-106): Invoking events without "emit" prefix is deprecated.
+// Warning: (95-106): Tuple component cannot be empty.

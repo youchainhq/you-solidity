@@ -24,7 +24,7 @@
 
 using namespace std;
 using namespace dev;
-using namespace dev::lll;
+using namespace dev::eth;
 
 CompilerState::CompilerState()
 {
@@ -44,7 +44,7 @@ CodeFragment const& CompilerState::getDef(std::string const& _s) const
 
 void CompilerState::populateStandard()
 {
-	static string const s = "{"
+	static const string s = "{"
 	"(def 'panic () (asm INVALID))"
 	// Alternative macro version of alloc, which is currently implemented in the parser
 	// "(def 'alloc (n) (raw (msize) (when n (pop (mload (+ (msize) (& (- n 1) (~ 0x1f))))))))"

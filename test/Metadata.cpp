@@ -22,7 +22,6 @@
 #include <string>
 #include <iostream>
 #include <libdevcore/JSON.h>
-#include <test/Metadata.h>
 
 using namespace std;
 
@@ -31,24 +30,21 @@ namespace dev
 namespace test
 {
 
-bytes bytecodeSansMetadata(bytes const& _bytecode)
-{
-	unsigned size = _bytecode.size();
-	if (size < 5)
-		return bytes{};
-	size_t metadataSize = (_bytecode[size - 2] << 8) + _bytecode[size - 1];
-	if (size < (metadataSize + 2))
-		return bytes{};
-	// Sanity check: assume the first byte is a fixed-size CBOR array with either 1 or 2 entries
-	unsigned char firstByte = _bytecode[size - metadataSize - 2];
-	if (firstByte != 0xa1 && firstByte != 0xa2)
-		return bytes{};
-	return bytes(_bytecode.begin(), _bytecode.end() - metadataSize - 2);
-}
-
 string bytecodeSansMetadata(string const& _bytecode)
 {
-	return toHex(bytecodeSansMetadata(fromHex(_bytecode, WhenError::Throw)));
+	/// The metadata hash takes up 43 bytes (or 86 characters in hex)
+	/// /a165627a7a72305820([0-9a-f]{64})0029$/
+
+	if (_bytecode.size() < 88)
+		return _bytecode;
+
+	if (_bytecode.substr(_bytecode.size() - 4, 4) != "0029")
+		return _bytecode;
+
+	if (_bytecode.substr(_bytecode.size() - 86, 18) != "a165627a7a72305820")
+		return _bytecode;
+
+	return _bytecode.substr(0, _bytecode.size() - 86);
 }
 
 bool isValidMetadata(string const& _metadata)

@@ -1,7 +1,8 @@
-### 0.4.26 (2020-01-20)
+### 0.4.26 (2020-01-16)
 
 YOUChain Features:
- * remove op code DIFFICULTY
+ * Remove op code DIFFICULTY.
+ * About swarm hash: source filename irrelevant metadata, so to genarate a more consistent swarm hash.
 
 Important Bugfixes:
  * Code Generator: Fix initialization routine of uninitialized internal function pointers in constructor context.

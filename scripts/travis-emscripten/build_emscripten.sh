@@ -34,6 +34,12 @@
 
 set -ev
 
+#--------------------------------------------------------------
+# Update package source list.
+#--------------------------------------------------------------
+sed -i 's/httpredir.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list
+sed -i 's|security.debian.org|mirrors.ustc.edu.cn/debian-security|g' /etc/apt/sources.list
+
 if ! type git &>/dev/null; then
     # We need git for extracting the commit hash
     apt-get update

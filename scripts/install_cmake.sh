@@ -23,17 +23,20 @@ PATH=$PREFIX/bin:$PATH
 if test -f $BIN/cmake && ($BIN/cmake --version | grep -q "$VERSION"); then
     echo "CMake $VERSION already installed in $BIN"
 else
+    WORKSPACE=/root/project
     FILE=cmake-$VERSION-$OS-x86_64.tar.gz
-    URL=https://cmake.org/files/v3.7/$FILE
-    ERROR=0
-    TMPFILE=$(mktemp --tmpdir cmake-$VERSION-$OS-x86_64.XXXXXXXX.tar.gz)
-    echo "Downloading CMake ($URL)..."
-    wget "$URL" -O "$TMPFILE" -nv
+    TMPFILE=$WORKSPACE/deps/downloads/$FILE
+    if ! test -f $TMPFILE ; then
+        URL=https://cmake.org/files/v3.7/$FILE
+        ERROR=0
+        echo "Downloading CMake ($URL)..."
+        wget "$URL" -O "$TMPFILE" -nv
+    fi
     if ! (shasum -a256 "$TMPFILE" | grep -q "$SHA256"); then
         echo "Checksum mismatch ($TMPFILE)"
+        rm $TMPFILE
         exit 1
     fi
     mkdir -p "$PREFIX"
     tar xzf "$TMPFILE" -C "$PREFIX" --strip 1
-    rm $TMPFILE
 fi

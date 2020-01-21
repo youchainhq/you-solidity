@@ -87,8 +87,7 @@ enum class Instruction: uint8_t
 	COINBASE,			///< get the block's coinbase address
 	TIMESTAMP,			///< get the block's timestamp
 	NUMBER,				///< get the block's number
-	DIFFICULTY,			///< get the block's difficulty
-	GASLIMIT,			///< get the block's gas limit
+	GASLIMIT = 0x45,	///< get the block's gas limit
 
 	POP = 0x50,			///< remove item from stack
 	MLOAD,				///< load word from memory

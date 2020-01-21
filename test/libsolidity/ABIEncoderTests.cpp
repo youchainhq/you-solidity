@@ -293,34 +293,6 @@ BOOST_AUTO_TEST_CASE(storage_array_dyn)
 	)
 }
 
-BOOST_AUTO_TEST_CASE(storage_array_compact)
-{
-	string sourceCode = R"(
-		contract C {
-			int72[] x;
-			event E(int72[]);
-			function f() public {
-				x.push(-1);
-				x.push(2);
-				x.push(-3);
-				x.push(4);
-				x.push(-5);
-				x.push(6);
-				x.push(-7);
-				x.push(8);
-				E(x);
-			}
-		}
-	)";
-	BOTH_ENCODERS(
-		compileAndRun(sourceCode);
-		callContractFunction("f()");
-		REQUIRE_LOG_DATA(encodeArgs(
-			0x20, 8, u256(-1), 2, u256(-3), 4, u256(-5), 6, u256(-7), 8
-		));
-	)
-}
-
 BOOST_AUTO_TEST_CASE(external_function)
 {
 	string sourceCode = R"(

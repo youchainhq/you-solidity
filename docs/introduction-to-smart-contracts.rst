@@ -301,7 +301,7 @@ Every account has a persistent key-value store mapping 256-bit words to 256-bit
 words called **storage**.
 
 Furthermore, every account has a **balance** in
-You (in "Wei" to be exact) which can be modified by sending transactions that
+You (in "Lu" to be exact) which can be modified by sending transactions that
 include You.
 
 .. index:: ! transaction

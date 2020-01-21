@@ -1,3 +1,18 @@
+### 0.4.26 (2020-01-16)
+
+YOUChain Features:
+ * Remove op code DIFFICULTY.
+ * About swarm hash: source filename irrelevant metadata, so to genarate a more consistent swarm hash.
+
+Important Bugfixes:
+ * Code Generator: Fix initialization routine of uninitialized internal function pointers in constructor context.
+ * Type System: Use correct type name for contracts in event parameters when used in libraries. This affected code generation.
+
+Bugfixes:
+ * ABIEncoderV2: Refuse to generate code that is known to be potentially buggy.
+ * General: Split rule list such that JavaScript environments with small stacks can use the compiler.
+
+
 ### 0.4.25 (2018-09-12)
 
 Important Bugfixes:

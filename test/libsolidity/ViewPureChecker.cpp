@@ -109,7 +109,6 @@ BOOST_AUTO_TEST_CASE(environment_access)
 		"block.coinbase",
 		"block.timestamp",
 		"block.blockhash(7)",
-		"block.difficulty",
 		"block.number",
 		"block.gaslimit",
 		"blockhash(7)",

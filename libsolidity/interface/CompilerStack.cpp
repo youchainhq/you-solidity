@@ -852,29 +852,30 @@ string CompilerStack::createMetadata(Contract const& _contract) const
 		referencedSources.insert(sourceUnit->annotation().path);
 
 	meta["sources"] = Json::objectValue;
+	int i = 0;
 	for (auto const& s: m_sources)
 	{
 		if (!referencedSources.count(s.first))
 			continue;
 
 		solAssert(s.second.scanner, "Scanner not available");
-		meta["sources"][s.first]["keccak256"] =
+		meta["sources"][to_string(i)]["keccak256"] =
 			"0x" + toHex(dev::keccak256(s.second.scanner->source()).asBytes());
 		if (m_metadataLiteralSources)
-			meta["sources"][s.first]["content"] = s.second.scanner->source();
+			meta["sources"][to_string(i)]["content"] = s.second.scanner->source();
 		else
 		{
-			meta["sources"][s.first]["urls"] = Json::arrayValue;
-			meta["sources"][s.first]["urls"].append(
+			meta["sources"][to_string(i)]["urls"] = Json::arrayValue;
+			meta["sources"][to_string(i)]["urls"].append(
 				"bzzr://" + toHex(dev::swarmHash(s.second.scanner->source()).asBytes())
 			);
 		}
+		i++;
 	}
 	meta["settings"]["optimizer"]["enabled"] = m_optimize;
 	meta["settings"]["optimizer"]["runs"] = m_optimizeRuns;
 	meta["settings"]["evmVersion"] = m_evmVersion.name();
-	meta["settings"]["compilationTarget"][_contract.contract->sourceUnitName()] =
-		_contract.contract->annotation().canonicalName;
+	meta["settings"]["compilationTarget"] = _contract.contract->annotation().canonicalName;
 
 	meta["settings"]["remappings"] = Json::arrayValue;
 	set<string> remappings;

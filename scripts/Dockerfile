@@ -1,7 +1,7 @@
 #build enviroment, can reuse on local
 FROM alpine as buildenv
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories &&\
-apk --no-cache --update add boost-dev build-base cmake git 
+apk --no-cache --update add boost-dev boost-static build-base cmake git 
 
 # build the solc
 FROM buildenv as builder
@@ -18,7 +18,7 @@ make solc && install -s  solc/solc /usr/bin	&&\
 cd / && rm -rf solidity 
 
 # the production image
-FROM alpine
+FROM scratch
 LABEL maintainer="darlzan<darlzan@foxmail.com>"
 COPY --from=builder /usr/bin/solc /usr/bin/
 ENTRYPOINT [ "/usr/bin/solc" ]

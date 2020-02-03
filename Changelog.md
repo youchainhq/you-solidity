@@ -1,4 +1,8 @@
-### 0.5.16 (2020-01-02)
+### 0.5.16 (2020-02-03)
+
+YOUChain Features:
+
+* Delete token units `szabo` and `finney`
 
 Bugfixes:
  * Yul Optimizer: Fix bug in redundant assignment remover in combination with break and continue statements.

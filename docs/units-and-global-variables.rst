@@ -2,18 +2,16 @@
 Units and Globally Available Variables
 **************************************
 
-.. index:: lu, finney, szabo, you
+.. index:: lu, you
 
 YOU Units
 ===========
 
-A literal number can take a suffix of ``lu``, ``finney``, ``szabo`` or ``you`` to specify a subdenomination of `you`, where `you` numbers without a postfix are assumed to be lu.
+A literal number can take a suffix of ``lu`` or ``you`` to specify a subdenomination of `you`, where `you` numbers without a postfix are assumed to be lu.
 
 ::
 
     assert(1 lu == 1);
-    assert(1 szabo == 1e12);
-    assert(1 finney == 1e15);
     assert(1 you == 1e18);
 
 The only effect of the subdenomination suffix is a multiplication by a power of ten.

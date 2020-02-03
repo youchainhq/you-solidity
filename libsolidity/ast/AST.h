@@ -1680,8 +1680,6 @@ public:
 	{
 		None = static_cast<int>(Token::Illegal),
 		Lu = static_cast<int>(Token::SubLu),
-		Szabo = static_cast<int>(Token::SubSzabo),
-		Finney = static_cast<int>(Token::SubFinney),
 		You = static_cast<int>(Token::SubYou),
 		Second = static_cast<int>(Token::SubSecond),
 		Minute = static_cast<int>(Token::SubMinute),

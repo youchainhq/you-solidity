@@ -98,12 +98,13 @@ public:
 
 		auto filterEmpty = boost::adaptors::filtered([](std::string const& _s) { return !_s.empty(); });
 
-		std::string errorStr = dev::joinHumanReadable(descs | filterEmpty);
+		std::string errorStr = dev::joinHumanReadable(descs | filterEmpty, " ");
 
 		error(Error::Type::TypeError, _location, errorStr);
 	}
 
 	void fatalTypeError(SourceLocation const& _location, std::string const& _description);
+	void fatalTypeError(SourceLocation const& _location, SecondarySourceLocation const& _secondLocation, std::string const& _description);
 
 	void docstringParsingError(std::string const& _description);
 
@@ -117,13 +118,24 @@ public:
 		return m_errorCount > 0;
 	}
 
+	// @returns true if the maximum error count has been reached.
+	bool hasExcessiveErrors() const;
+
 private:
-	void error(Error::Type _type,
+	void error(
+		Error::Type _type,
 		SourceLocation const& _location,
 		SecondarySourceLocation const& _secondaryLocation,
 		std::string const& _description = std::string());
 
-	void fatalError(Error::Type _type,
+	void fatalError(
+		Error::Type _type,
+		SourceLocation const& _location,
+		SecondarySourceLocation const& _secondaryLocation,
+		std::string const& _description = std::string());
+
+	void fatalError(
+		Error::Type _type,
 		SourceLocation const& _location = SourceLocation(),
 		std::string const& _description = std::string());
 
@@ -140,4 +152,3 @@ private:
 };
 
 }
-

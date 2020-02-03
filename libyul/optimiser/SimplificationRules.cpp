@@ -23,6 +23,7 @@
 #include <libyul/optimiser/ASTCopier.h>
 #include <libyul/optimiser/Semantics.h>
 #include <libyul/optimiser/SyntacticalEquality.h>
+#include <libyul/backends/evm/EVMDialect.h>
 #include <libyul/AsmData.h>
 #include <libyul/Utilities.h>
 
@@ -30,35 +31,51 @@
 
 using namespace std;
 using namespace dev;
+using namespace dev::eth;
 using namespace langutil;
 using namespace yul;
 
 
-SimplificationRule<Pattern> const* SimplificationRules::findFirstMatch(
+SimplificationRule<yul::Pattern> const* SimplificationRules::findFirstMatch(
 	Expression const& _expr,
 	Dialect const& _dialect,
 	map<YulString, Expression const*> const& _ssaValues
 )
 {
-	if (_expr.type() != typeid(FunctionalInstruction))
+	auto instruction = instructionAndArguments(_dialect, _expr);
+	if (!instruction)
 		return nullptr;
 
 	static SimplificationRules rules;
 	assertThrow(rules.isInitialized(), OptimizerException, "Rule list not properly initialized.");
 
-	FunctionalInstruction const& instruction = boost::get<FunctionalInstruction>(_expr);
-	for (auto const& rule: rules.m_rules[uint8_t(instruction.instruction)])
+	for (auto const& rule: rules.m_rules[uint8_t(instruction->first)])
 	{
 		rules.resetMatchGroups();
 		if (rule.pattern.matches(_expr, _dialect, _ssaValues))
-			return &rule;
+			if (!rule.feasible || rule.feasible())
+				return &rule;
 	}
 	return nullptr;
 }
 
 bool SimplificationRules::isInitialized() const
 {
-	return !m_rules[uint8_t(solidity::Instruction::ADD)].empty();
+	return !m_rules[uint8_t(dev::eth::Instruction::ADD)].empty();
+}
+
+std::optional<std::pair<dev::eth::Instruction, vector<Expression> const*>>
+	SimplificationRules::instructionAndArguments(Dialect const& _dialect, Expression const& _expr)
+{
+	if (holds_alternative<FunctionalInstruction>(_expr))
+		return make_pair(std::get<FunctionalInstruction>(_expr).instruction, &std::get<FunctionalInstruction>(_expr).arguments);
+	else if (holds_alternative<FunctionCall>(_expr))
+		if (auto const* dialect = dynamic_cast<EVMDialect const*>(&_dialect))
+			if (auto const* builtin = dialect->builtin(std::get<FunctionCall>(_expr).functionName.name))
+				if (builtin->instruction)
+					return make_pair(*builtin->instruction, &std::get<FunctionCall>(_expr).arguments);
+
+	return {};
 }
 
 void SimplificationRules::addRules(vector<SimplificationRule<Pattern>> const& _rules)
@@ -80,19 +97,23 @@ SimplificationRules::SimplificationRules()
 	Pattern B(PatternKind::Constant);
 	Pattern C(PatternKind::Constant);
 	// Anything.
+	Pattern W;
 	Pattern X;
 	Pattern Y;
+	Pattern Z;
 	A.setMatchGroup(1, m_matchGroups);
 	B.setMatchGroup(2, m_matchGroups);
 	C.setMatchGroup(3, m_matchGroups);
-	X.setMatchGroup(4, m_matchGroups);
-	Y.setMatchGroup(5, m_matchGroups);
+	W.setMatchGroup(4, m_matchGroups);
+	X.setMatchGroup(5, m_matchGroups);
+	Y.setMatchGroup(6, m_matchGroups);
+	Z.setMatchGroup(7, m_matchGroups);
 
-	addRules(simplificationRuleList(A, B, C, X, Y));
+	addRules(simplificationRuleList(A, B, C, W, X, Y, Z));
 	assertThrow(isInitialized(), OptimizerException, "Rule list not properly initialized.");
 }
 
-Pattern::Pattern(solidity::Instruction _instruction, vector<Pattern> const& _arguments):
+yul::Pattern::Pattern(dev::eth::Instruction _instruction, initializer_list<Pattern> _arguments):
 	m_kind(PatternKind::Operation),
 	m_instruction(_instruction),
 	m_arguments(_arguments)
@@ -115,9 +136,9 @@ bool Pattern::matches(
 
 	// Resolve the variable if possible.
 	// Do not do it for "Any" because we can check identity better for variables.
-	if (m_kind != PatternKind::Any && _expr.type() == typeid(Identifier))
+	if (m_kind != PatternKind::Any && holds_alternative<Identifier>(_expr))
 	{
-		YulString varName = boost::get<Identifier>(_expr).name;
+		YulString varName = std::get<Identifier>(_expr).name;
 		if (_ssaValues.count(varName))
 			if (Expression const* new_expr = _ssaValues.at(varName))
 				expr = new_expr;
@@ -126,9 +147,9 @@ bool Pattern::matches(
 
 	if (m_kind == PatternKind::Constant)
 	{
-		if (expr->type() != typeid(Literal))
+		if (!holds_alternative<Literal>(*expr))
 			return false;
-		Literal const& literal = boost::get<Literal>(*expr);
+		Literal const& literal = std::get<Literal>(*expr);
 		if (literal.kind != LiteralKind::Number)
 			return false;
 		if (m_data && *m_data != u256(literal.value.str()))
@@ -137,14 +158,12 @@ bool Pattern::matches(
 	}
 	else if (m_kind == PatternKind::Operation)
 	{
-		if (expr->type() != typeid(FunctionalInstruction))
+		auto instrAndArgs = SimplificationRules::instructionAndArguments(_dialect, *expr);
+		if (!instrAndArgs || m_instruction != instrAndArgs->first)
 			return false;
-		FunctionalInstruction const& instr = boost::get<FunctionalInstruction>(*expr);
-		if (m_instruction != instr.instruction)
-			return false;
-		assertThrow(m_arguments.size() == instr.arguments.size(), OptimizerException, "");
+		assertThrow(m_arguments.size() == instrAndArgs->second->size(), OptimizerException, "");
 		for (size_t i = 0; i < m_arguments.size(); ++i)
-			if (!m_arguments[i].matches(instr.arguments.at(i), _dialect, _ssaValues))
+			if (!m_arguments[i].matches(instrAndArgs->second->at(i), _dialect, _ssaValues))
 				return false;
 	}
 	else
@@ -172,7 +191,7 @@ bool Pattern::matches(
 			assertThrow(firstMatch, OptimizerException, "Match set but to null.");
 			return
 				SyntacticallyEqual{}(*firstMatch, _expr) &&
-				MovableChecker(_dialect, _expr).movable();
+				SideEffectsCollector(_dialect, _expr).movable();
 		}
 		else if (m_kind == PatternKind::Any)
 			(*m_matchGroups)[m_matchGroup] = &_expr;
@@ -186,7 +205,7 @@ bool Pattern::matches(
 	return true;
 }
 
-solidity::Instruction Pattern::instruction() const
+dev::eth::Instruction Pattern::instruction() const
 {
 	assertThrow(m_kind == PatternKind::Operation, OptimizerException, "");
 	return m_instruction;
@@ -206,6 +225,7 @@ Expression Pattern::toExpression(SourceLocation const& _location) const
 		vector<Expression> arguments;
 		for (auto const& arg: m_arguments)
 			arguments.emplace_back(arg.toExpression(_location));
+		// TODO convert to FunctionCall
 		return FunctionalInstruction{_location, m_instruction, std::move(arguments)};
 	}
 	assertThrow(false, OptimizerException, "Pattern of kind 'any', but no match group.");
@@ -213,7 +233,7 @@ Expression Pattern::toExpression(SourceLocation const& _location) const
 
 u256 Pattern::d() const
 {
-	return valueOfNumberLiteral(boost::get<Literal>(matchGroupValue()));
+	return valueOfNumberLiteral(std::get<Literal>(matchGroupValue()));
 }
 
 Expression const& Pattern::matchGroupValue() const

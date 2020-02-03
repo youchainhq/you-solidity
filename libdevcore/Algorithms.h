@@ -32,11 +32,13 @@ template <typename V>
 class CycleDetector
 {
 public:
+	using Visitor = std::function<void(V const&, CycleDetector&, size_t)>;
+
 	/// Initializes the cycle detector
 	/// @param _visit function that is given the current vertex
 	///               and is supposed to call @a run on all
 	///               adjacent vertices.
-	explicit CycleDetector(std::function<void(V const&, CycleDetector&)> _visit):
+	explicit CycleDetector(Visitor _visit):
 		m_visit(std::move(_visit))
 	{  }
 
@@ -55,7 +57,7 @@ public:
 		m_processing.insert(&_vertex);
 
 		m_depth++;
-		m_visit(_vertex, *this);
+		m_visit(_vertex, *this, m_depth);
 		m_depth--;
 		if (m_firstCycleVertex && m_depth == 1)
 			m_firstCycleVertex = &_vertex;
@@ -66,11 +68,55 @@ public:
 	}
 
 private:
-	std::function<void(V const&, CycleDetector&)> m_visit;
+	Visitor m_visit;
 	std::set<V const*> m_processing;
 	std::set<V const*> m_processed;
 	size_t m_depth = 0;
 	V const* m_firstCycleVertex = nullptr;
+};
+
+/**
+ * Generic breadth first search.
+ *
+ * Note that V needs to be a comparable value type. If it is not, use a pointer type,
+ * but note that this might lead to non-deterministic traversal.
+ *
+ * Example: Gather all (recursive) children in a graph starting at (and including) ``root``:
+ *
+ * Node const* root = ...;
+ * std::set<Node const*> allNodes = BreadthFirstSearch<Node const*>{{root}}.run([](Node const* _node, auto&& _addChild) {
+ *   // Potentially process ``_node``.
+ *   for (Node const& _child: _node->children())
+ *     // Potentially filter the children to be visited.
+ *     _addChild(&_child);
+ * }).visited;
+ */
+template<typename V>
+struct BreadthFirstSearch
+{
+	/// Runs the breadth first search. The verticesToTraverse member of the struct needs to be initialized.
+	/// @param _forEachChild is a callable of the form [...](V const& _node, auto&& _addChild) { ... }
+	/// that is called for each visited node and is supposed to call _addChild(childNode) for every child
+	/// node of _node.
+	template<typename ForEachChild>
+	BreadthFirstSearch& run(ForEachChild&& _forEachChild)
+	{
+		while (!verticesToTraverse.empty())
+		{
+			V v = *verticesToTraverse.begin();
+			verticesToTraverse.erase(verticesToTraverse.begin());
+			visited.insert(v);
+
+			_forEachChild(v, [this](V _vertex) {
+				if (!visited.count(_vertex))
+					verticesToTraverse.emplace(std::move(_vertex));
+			});
+		}
+		return *this;
+	}
+
+	std::set<V> verticesToTraverse;
+	std::set<V> visited{};
 };
 
 }

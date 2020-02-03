@@ -68,20 +68,20 @@ Rematerialiser::Rematerialiser(
 
 void Rematerialiser::visit(Expression& _e)
 {
-	if (_e.type() == typeid(Identifier))
+	if (holds_alternative<Identifier>(_e))
 	{
-		Identifier& identifier = boost::get<Identifier>(_e);
-		if (m_value.count(identifier.name))
+		Identifier& identifier = std::get<Identifier>(_e);
+		YulString name = identifier.name;
+		if (m_value.count(name))
 		{
-			YulString name = identifier.name;
 			assertThrow(m_value.at(name), OptimizerException, "");
 			auto const& value = *m_value.at(name);
 			size_t refs = m_referenceCounts[name];
-			size_t cost = CodeCost::codeCost(value);
+			size_t cost = CodeCost::codeCost(m_dialect, value);
 			if (refs <= 1 || cost == 0 || (refs <= 5 && cost <= 1) || m_varsToAlwaysRematerialize.count(name))
 			{
 				assertThrow(m_referenceCounts[name] > 0, OptimizerException, "");
-				for (auto const& ref: m_references[name])
+				for (auto const& ref: m_references.forward[name])
 					assertThrow(inScope(ref), OptimizerException, "");
 				// update reference counts
 				m_referenceCounts[name]--;
@@ -89,6 +89,23 @@ void Rematerialiser::visit(Expression& _e)
 					m_referenceCounts[ref.first] += ref.second;
 				_e = (ASTCopier{}).translate(value);
 			}
+		}
+	}
+	DataFlowAnalyzer::visit(_e);
+}
+
+void LiteralRematerialiser::visit(Expression& _e)
+{
+	if (holds_alternative<Identifier>(_e))
+	{
+		Identifier& identifier = std::get<Identifier>(_e);
+		YulString name = identifier.name;
+		if (m_value.count(name))
+		{
+			Expression const* value = m_value.at(name);
+			assertThrow(value, OptimizerException, "");
+			if (holds_alternative<Literal>(*value))
+				_e = *value;
 		}
 	}
 	DataFlowAnalyzer::visit(_e);

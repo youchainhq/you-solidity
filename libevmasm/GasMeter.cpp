@@ -101,8 +101,8 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 			break;
 		case Instruction::KECCAK256:
 			gas = GasCosts::keccak256Gas;
-			gas += wordGas(GasCosts::keccak256WordGas, m_state->relativeStackElement(-1));
 			gas += memoryGas(0, -1);
+			gas += wordGas(GasCosts::keccak256WordGas, m_state->relativeStackElement(-1));
 			break;
 		case Instruction::CALLDATACOPY:
 		case Instruction::CODECOPY:
@@ -113,6 +113,9 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 			break;
 		case Instruction::EXTCODESIZE:
 			gas = GasCosts::extCodeGas(m_evmVersion);
+			break;
+		case Instruction::EXTCODEHASH:
+			gas = GasCosts::balanceGas(m_evmVersion);
 			break;
 		case Instruction::EXTCODECOPY:
 			gas = GasCosts::extCodeGas(m_evmVersion);
@@ -125,8 +128,7 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 		case Instruction::LOG3:
 		case Instruction::LOG4:
 		{
-			unsigned n = unsigned(_item.instruction()) - unsigned(Instruction::LOG0);
-			gas = GasCosts::logGas + GasCosts::logTopicGas * n;
+			gas = GasCosts::logGas + GasCosts::logTopicGas * getLogNumber(_item.instruction());
 			gas += memoryGas(0, -1);
 			if (u256 const* value = classes.knownConstant(m_state->relativeStackElement(-1)))
 				gas += GasCosts::logDataGas * (*value);
@@ -186,6 +188,12 @@ GasMeter::GasConsumption GasMeter::estimateMax(AssemblyItem const& _item, bool _
 		case Instruction::BALANCE:
 			gas = GasCosts::balanceGas(m_evmVersion);
 			break;
+		case Instruction::CHAINID:
+			gas = runGas(Instruction::CHAINID);
+			break;
+		case Instruction::SELFBALANCE:
+			gas = runGas(Instruction::SELFBALANCE);
+			break;
 		default:
 			gas = runGas(_item.instruction());
 			break;
@@ -215,7 +223,7 @@ GasMeter::GasConsumption GasMeter::memoryGas(ExpressionClasses::Id _position)
 	if (!value)
 		return GasConsumption::infinite();
 	if (*value < m_largestMemoryAccess)
-		return GasConsumption(u256(0));
+		return GasConsumption(0);
 	u256 previous = m_largestMemoryAccess;
 	m_largestMemoryAccess = *value;
 	auto memGas = [=](u256 const& pos) -> u256
@@ -258,4 +266,16 @@ unsigned GasMeter::runGas(Instruction _instruction)
 	return 0;
 }
 
-
+u256 GasMeter::dataGas(bytes const& _data, bool _inCreation, langutil::EVMVersion _evmVersion)
+{
+	bigint gas = 0;
+	if (_inCreation)
+	{
+		for (auto b: _data)
+			gas += (b != 0) ? GasCosts::txDataNonZeroGas(_evmVersion) : GasCosts::txDataZeroGas;
+	}
+	else
+		gas = bigint(GasCosts::createDataGas) * _data.size();
+	assertThrow(gas < bigint(u256(-1)), OptimizerException, "Gas cost exceeds 256 bits.");
+	return u256(gas);
+}

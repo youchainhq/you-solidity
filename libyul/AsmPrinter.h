@@ -26,12 +26,10 @@
 
 #include <libyul/YulString.h>
 
-#include <boost/variant.hpp>
-
 namespace yul
 {
 
-class AsmPrinter: public boost::static_visitor<std::string>
+class AsmPrinter
 {
 public:
 	explicit AsmPrinter(bool _yul = false): m_yul(_yul) {}
@@ -50,6 +48,8 @@ public:
 	std::string operator()(If const& _if) const;
 	std::string operator()(Switch const& _switch) const;
 	std::string operator()(ForLoop const& _forLoop) const;
+	std::string operator()(Break const& _break) const;
+	std::string operator()(Continue const& _continue) const;
 	std::string operator()(Block const& _block) const;
 
 private:

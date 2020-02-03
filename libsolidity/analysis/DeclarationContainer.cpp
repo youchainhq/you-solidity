@@ -1,18 +1,18 @@
 /*
-    This file is part of solidity.
+	This file is part of solidity.
 
-    solidity is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	solidity is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    solidity is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	solidity is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with solidity.  If not, see <http://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with solidity.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
  * @author Christian <c@ethdev.com>
@@ -21,6 +21,7 @@
  */
 
 #include <libsolidity/analysis/DeclarationContainer.h>
+
 #include <libsolidity/ast/AST.h>
 #include <libsolidity/ast/Types.h>
 #include <libdevcore/StringUtils.h>
@@ -49,16 +50,10 @@ Declaration const* DeclarationContainer::conflictingDeclaration(
 		dynamic_cast<MagicVariableDeclaration const*>(&_declaration)
 	)
 	{
-		// check that all other declarations with the same name are functions or a public state variable or events.
-		// And then check that the signatures are different.
+		// check that all other declarations are of the same kind (in which
+		// case the type checker will ensure that the signatures are different)
 		for (Declaration const* declaration: declarations)
 		{
-			if (auto variableDeclaration = dynamic_cast<VariableDeclaration const*>(declaration))
-			{
-				if (variableDeclaration->isStateVariable() && !variableDeclaration->isConstant() && variableDeclaration->isPublic())
-					continue;
-				return declaration;
-			}
 			if (
 				dynamic_cast<FunctionDefinition const*>(&_declaration) &&
 				!dynamic_cast<FunctionDefinition const*>(declaration)
@@ -94,6 +89,11 @@ void DeclarationContainer::activateVariable(ASTString const& _name)
 	solAssert(m_declarations.count(_name) == 0 || m_declarations.at(_name).empty(), "");
 	m_declarations[_name].emplace_back(m_invisibleDeclarations.at(_name).front());
 	m_invisibleDeclarations.erase(_name);
+}
+
+bool DeclarationContainer::isInvisible(ASTString const& _name) const
+{
+	return m_invisibleDeclarations.count(_name);
 }
 
 bool DeclarationContainer::registerDeclaration(
@@ -138,20 +138,23 @@ vector<Declaration const*> DeclarationContainer::resolveName(ASTString const& _n
 
 vector<ASTString> DeclarationContainer::similarNames(ASTString const& _name) const
 {
-	static size_t const MAXIMUM_EDIT_DISTANCE = 2;
+
+	// because the function below has quadratic runtime - it will not magically improve once a better algorithm is discovered ;)
+	// since 80 is the suggested line length limit, we use 80^2 as length threshold
+	static size_t const MAXIMUM_LENGTH_THRESHOLD = 80 * 80;
 
 	vector<ASTString> similar;
-
+	size_t maximumEditDistance = _name.size() > 3 ? 2 : _name.size() / 2;
 	for (auto const& declaration: m_declarations)
 	{
 		string const& declarationName = declaration.first;
-		if (stringWithinDistance(_name, declarationName, MAXIMUM_EDIT_DISTANCE))
+		if (stringWithinDistance(_name, declarationName, maximumEditDistance, MAXIMUM_LENGTH_THRESHOLD))
 			similar.push_back(declarationName);
 	}
 	for (auto const& declaration: m_invisibleDeclarations)
 	{
 		string const& declarationName = declaration.first;
-		if (stringWithinDistance(_name, declarationName, MAXIMUM_EDIT_DISTANCE))
+		if (stringWithinDistance(_name, declarationName, maximumEditDistance, MAXIMUM_LENGTH_THRESHOLD))
 			similar.push_back(declarationName);
 	}
 

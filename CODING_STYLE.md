@@ -46,6 +46,8 @@ foo->bar(someLongVariableName,
 cout << "some very long string that contains completely irrelevant text that talks about this and that and contains the words \"lorem\" and \"ipsum\"" << endl;
 ```
 
+To set indentation and tab width settings uniformly, the repository contains an [EditorConfig](https://editorconfig.org/) [`.editorconfig`](https://github.com/ethereum/solidity/blob/develop/.editorconfig) file, which describes some of the styles used and which is recognized by many IDE's and editors.
+
 ## 1. Namespaces
 
 1. No `using namespace` declarations in header files.
@@ -117,7 +119,7 @@ Use `solAssert` and `solUnimplementedAssert` generously to check assumptions tha
 4. Favour declarations close to use; don't habitually declare at top of scope ala C.
 5. Pass non-trivial parameters as const reference, unless the data is to be copied into the function, then either pass by const reference or by value and use std::move.
 6. If a function returns multiple values, use std::tuple (std::pair acceptable) or better introduce a struct type. Do not use */& arguments.
-7. Use parameters of pointer type only if ``nullptr`` is a valid argument, use references otherwise. Often, ``boost::optional`` is better suited than a raw pointer.
+7. Use parameters of pointer type only if ``nullptr`` is a valid argument, use references otherwise. Often, ``std::optional`` is better suited than a raw pointer.
 8. Never use a macro where adequate non-preprocessor C++ can be written.
 9. Only use ``auto`` if the type is very long and rather irrelevant.
 10. Do not pass bools: prefer enumerations instead.
@@ -133,12 +135,12 @@ enum class Accuracy
 };
 struct MeanSigma
 {
-	float mean;
-	float standardDeviation;
+	float mean = 0.0f;
+	float standardDeviation = 1.0f;
 };
 double const d = 0;
-int i;
-int j;
+int i = 0;
+int j = 0;
 char* s;
 MeanAndSigma ms meanAndSigma(std::vector<float> const& _v, Accuracy _a);
 Derived* x = dynamic_cast<Derived*>(base);
@@ -146,7 +148,7 @@ for (auto i = x->begin(); i != x->end(); ++i) {}
 ```
 
 No:
-```cp
+```cpp
 const double d = 0;
 int i, j;
 char *s;
@@ -193,7 +195,7 @@ for (map<ComplexTypeOne, ComplexTypeTwo>::iterator i = l.begin(); i != l.end(); 
 2. Generally avoid shortening a standard form that already includes all important information:
    - e.g. stick to `shared_ptr<X>` rather than shortening to `ptr<X>`.
 3. Where there are exceptions to this (due to excessive use and clear meaning), note the change prominently and use it consistently:
-   - e.g. `using Guard = std::lock_guard<std::mutex>;` ///< Guard is used throughout the codebase since it is clear in meaning and used commonly. 
+   - e.g. `using Guard = std::lock_guard<std::mutex>;` ///< Guard is used throughout the codebase since it is clear in meaning and used commonly.
 4. In general expressions should be roughly as important/semantically meaningful as the space they occupy.
 5. Avoid introducing aliases for types unless they are very complicated. Consider the number of items a brain can keep track of at the same time.
 

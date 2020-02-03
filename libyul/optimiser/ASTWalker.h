@@ -25,12 +25,10 @@
 #include <libyul/Exceptions.h>
 #include <libyul/YulString.h>
 
-#include <boost/variant.hpp>
-#include <boost/optional.hpp>
-
-#include <vector>
-#include <set>
 #include <map>
+#include <optional>
+#include <set>
+#include <vector>
 
 namespace yul
 {
@@ -38,7 +36,7 @@ namespace yul
 /**
  * Generic AST walker.
  */
-class ASTWalker: public boost::static_visitor<>
+class ASTWalker
 {
 public:
 	virtual ~ASTWalker() = default;
@@ -56,6 +54,8 @@ public:
 	virtual void operator()(Switch const& _switch);
 	virtual void operator()(FunctionDefinition const&);
 	virtual void operator()(ForLoop const&);
+	virtual void operator()(Break const&) {}
+	virtual void operator()(Continue const&) {}
 	virtual void operator()(Block const& _block);
 
 	virtual void visit(Statement const& _st);
@@ -73,7 +73,7 @@ protected:
 /**
  * Generic AST modifier (i.e. non-const version of ASTWalker).
  */
-class ASTModifier: public boost::static_visitor<>
+class ASTModifier
 {
 public:
 	virtual ~ASTModifier() = default;
@@ -91,6 +91,8 @@ public:
 	virtual void operator()(Switch& _switch);
 	virtual void operator()(FunctionDefinition&);
 	virtual void operator()(ForLoop&);
+	virtual void operator()(Break&);
+	virtual void operator()(Continue&);
 	virtual void operator()(Block& _block);
 
 	virtual void visit(Statement& _st);

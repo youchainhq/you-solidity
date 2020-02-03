@@ -1,5 +1,5 @@
 #build enviroment, can reuse on local
-FROM alpine:3.8 as buildenv
+FROM alpine as buildenv
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories &&\
 apk --no-cache --update add boost-dev build-base cmake git 
 

@@ -23,11 +23,10 @@ endif()
 
 eth_add_cxx_compiler_flag_if_supported(-Wimplicit-fallthrough)
 
+# Prevent the path of the source directory from ending up in the binary via __FILE__ macros.
+eth_add_cxx_compiler_flag_if_supported("-fmacro-prefix-map=${CMAKE_SOURCE_DIR}=/solidity")
+
 if (("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang"))
-
-	# Use ISO C++11 standard language.
-	set(CMAKE_CXX_FLAGS -std=c++11)
-
 	# Enables all the warnings about constructions that some users consider questionable,
 	# and that are easy to avoid.  Also enable some extra warning flags that are not
 	# enabled by -Wall.   Finally, treat at warnings-as-errors, which forces developers
@@ -36,27 +35,20 @@ if (("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" MA
 	add_compile_options(-Wextra)
 	add_compile_options(-Werror)
 
-	# Disable warnings about unknown pragmas (which is enabled by -Wall).  I assume we have external
-	# dependencies (probably Boost) which have some of these.   Whatever the case, we shouldn't be
-	# disabling these globally.   Instead, we should pragma around just the problem #includes.
-	#
-	# TODO - Track down what breaks if we do NOT do this.
-	add_compile_options(-Wno-unknown-pragmas)
-
 	# Configuration-specific compiler settings.
-	set(CMAKE_CXX_FLAGS_DEBUG          "-O0 -g -DETH_DEBUG")
+	set(CMAKE_CXX_FLAGS_DEBUG          "-O0 -g3 -DETH_DEBUG")
 	set(CMAKE_CXX_FLAGS_MINSIZEREL     "-Os -DNDEBUG")
 	set(CMAKE_CXX_FLAGS_RELEASE        "-O3 -DNDEBUG")
-	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
+	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g3")
 
 	# Additional GCC-specific compiler settings.
 	if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
 
-		# Check that we've got GCC 4.7 or newer.
+		# Check that we've got GCC 5.0 or newer.
 		execute_process(
 			COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-		if (NOT (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7))
-			message(FATAL_ERROR "${PROJECT_NAME} requires g++ 4.7 or greater.")
+		if (NOT (GCC_VERSION VERSION_GREATER 5.0 OR GCC_VERSION VERSION_EQUAL 5.0))
+			message(FATAL_ERROR "${PROJECT_NAME} requires g++ 5.0 or greater.")
 		endif ()
 
 	# Additional Clang-specific compiler settings.
@@ -65,6 +57,12 @@ if (("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" MA
 			# Set stack size to 32MB - by default Apple's clang defines a stack size of 8MB.
 			# Normally 16MB is enough to run all tests, but it will exceed the stack, if -DSANITIZE=address is used.
 			set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-stack_size -Wl,0x2000000")
+
+			# Boost libraries use visibility=hidden to reduce unnecessary DWARF entries.
+			# Unless we match visibility, ld will give a warning message like:
+			#   ld: warning: direct access in function 'boost::filesystem... from file ...
+			#   means the weak symbol cannot be overridden at runtime. This was likely caused by different translation units being compiled with different visibility settings.
+			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
 		endif()
 
 		# Some Linux-specific Clang settings.  We don't want these for OS X.
@@ -73,25 +71,22 @@ if (("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" MA
 			# TODO - Is this even necessary?  Why?
 			# See http://stackoverflow.com/questions/19774778/when-is-it-necessary-to-use-use-the-flag-stdlib-libstdc.
 			add_compile_options(-stdlib=libstdc++)
-			
+
 			# Tell Boost that we're using Clang's libc++.   Not sure exactly why we need to do.
 			add_definitions(-DBOOST_ASIO_HAS_CLANG_LIBCXX)
-			
+
 			# Use fancy colors in the compiler diagnostics
 			add_compile_options(-fcolor-diagnostics)
-			
+
 			# See "How to silence unused command line argument error with clang without disabling it?"
 			# When using -Werror with clang, it transforms "warning: argument unused during compilation" messages
 			# into errors, which makes sense.
 			# http://stackoverflow.com/questions/21617158/how-to-silence-unused-command-line-argument-error-with-clang-without-disabling-i
 			add_compile_options(-Qunused-arguments)
-		endif()
-
-		if (EMSCRIPTEN)
-			# Do not emit a separate memory initialiser file
+		elseif(EMSCRIPTEN)
 			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --memory-init-file 0")
-			# Leave only exported symbols as public and agressively remove others
-			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdata-sections -ffunction-sections -Wl,--gc-sections -fvisibility=hidden")
+			# Leave only exported symbols as public and aggressively remove others
+			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdata-sections -ffunction-sections -fvisibility=hidden")
 			# Optimisation level
 			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 			# Re-enable exception catching (optimisations above -O1 disable it)
@@ -111,7 +106,16 @@ if (("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" MA
 			# Abort if linking results in any undefined symbols
 			# Note: this is on by default in the CMake Emscripten module which we aren't using
 			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s ERROR_ON_UNDEFINED_SYMBOLS=1")
-			add_definitions(-DETH_EMSCRIPTEN=1)
+			# Disallow deprecated emscripten build options.
+			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s STRICT=1")
+			# Export the Emscripten-generated auxiliary methods which are needed by solc-js.
+			# Which methods of libsolc itself are exported is specified in libsolc/CMakeLists.txt.
+			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s EXTRA_EXPORTED_RUNTIME_METHODS=['cwrap','addFunction','removeFunction','UTF8ToString','lengthBytesUTF8','_malloc','stringToUTF8','setValue']")
+			# Do not build as a WebAssembly target - we need an asm.js output.
+			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s WASM=0")
+
+			# Disable warnings about not being pure asm.js due to memory growth.
+			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-almost-asm")
 		endif()
 	endif()
 
@@ -131,6 +135,9 @@ elseif (DEFINED MSVC)
 	add_compile_options(/wd4800)					# disable forcing value to bool 'true' or 'false' (performance warning) (4800)
 	add_compile_options(-D_WIN32_WINNT=0x0600)		# declare Windows Vista API requirement
 	add_compile_options(-DNOMINMAX)					# undefine windows.h MAX && MIN macros cause it cause conflicts with std::min && std::max functions
+	add_compile_options(/utf-8)					# enable utf-8 encoding (solves warning 4819)
+	add_compile_options(-DBOOST_REGEX_NO_LIB)		# disable automatic boost::regex library selection
+	add_compile_options(-D_REGEX_MAX_STACK_COUNT=200000L)	# increase std::regex recursion depth limit
 
 	# disable empty object file warning
 	set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /ignore:4221")
@@ -145,34 +152,42 @@ else ()
 endif ()
 
 if (SANITIZE)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=${SANITIZE}")
-	if (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
-		set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fsanitize-blacklist=${CMAKE_SOURCE_DIR}/sanitizer-blacklist.txt")
+	# Perform case-insensitive string compare
+	string(TOLOWER "${SANITIZE}" san)
+	# -fno-omit-frame-pointer gives more informative stack trace in case of an error
+	# -fsanitize-address-use-after-scope throws an error when a variable is used beyond its scope
+	if (san STREQUAL "address")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=address -fsanitize-address-use-after-scope")
 	endif()
 endif()
 
-if (PROFILING AND (("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")))
-	set(CMAKE_CXX_FLAGS "-g ${CMAKE_CXX_FLAGS}")
-	set(CMAKE_C_FLAGS "-g ${CMAKE_C_FLAGS}")
-	add_definitions(-DETH_PROFILING_GPERF)
-	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -lprofiler")
-#	set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} -lprofiler")
-	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lprofiler")
-endif ()
+# Code coverage support.
+# Copied from Cable:
+# https://github.com/ethereum/cable/blob/v0.2.4/CableCompilerSettings.cmake#L118-L132
+option(COVERAGE "Build with code coverage support" OFF)
+if(COVERAGE)
+	# Set the linker flags first, they are required to properly test the compiler flag.
+	set(CMAKE_SHARED_LINKER_FLAGS "--coverage ${CMAKE_SHARED_LINKER_FLAGS}")
+	set(CMAKE_EXE_LINKER_FLAGS "--coverage ${CMAKE_EXE_LINKER_FLAGS}")
 
-if (PROFILING AND (("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")))
-        set(CMAKE_CXX_FLAGS "-g --coverage ${CMAKE_CXX_FLAGS}")
-        set(CMAKE_C_FLAGS "-g --coverage ${CMAKE_C_FLAGS}")
-        set(CMAKE_SHARED_LINKER_FLAGS "--coverage ${CMAKE_SHARED_LINKER_FLAGS} -lprofiler")
-        set(CMAKE_EXE_LINKER_FLAGS "--coverage ${CMAKE_EXE_LINKER_FLAGS} -lprofiler")
-endif ()
+	set(CMAKE_REQUIRED_LIBRARIES "--coverage ${CMAKE_REQUIRED_LIBRARIES}")
+	check_cxx_compiler_flag(--coverage have_coverage)
+	string(REPLACE "--coverage " "" CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
+	if(NOT have_coverage)
+		message(FATAL_ERROR "Coverage not supported")
+	endif()
+	add_compile_options(-g --coverage)
+endif()
+
+# SMT Solvers integration
+option(USE_Z3 "Allow compiling with Z3 SMT solver integration" ON)
+option(USE_CVC4 "Allow compiling with CVC4 SMT solver integration" ON)
 
 if (("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang"))
 	option(USE_LD_GOLD "Use GNU gold linker" ON)
 	if (USE_LD_GOLD)
-		execute_process(COMMAND ${CMAKE_C_COMPILER} -fuse-ld=gold -Wl,--version ERROR_QUIET OUTPUT_VARIABLE LD_VERSION)
+		execute_process(COMMAND ${CMAKE_CXX_COMPILER} -fuse-ld=gold -Wl,--version ERROR_QUIET OUTPUT_VARIABLE LD_VERSION)
 		if ("${LD_VERSION}" MATCHES "GNU gold")
-			set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fuse-ld=gold")
 			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fuse-ld=gold")
 		endif ()
 	endif ()

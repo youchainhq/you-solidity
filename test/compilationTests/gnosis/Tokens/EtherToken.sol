@@ -1,8 +1,8 @@
-pragma solidity ^0.4.11;
+pragma solidity >=0.0;
 import "../Tokens/StandardToken.sol";
 
 
-/// @title Token contract - Token exchanging You 1:1
+/// @title Token contract - Token exchanging `you` 1:1
 /// @author Stefan George - <stefan@gnosis.pm>
 contract EtherToken is StandardToken {
     using Math for *;
@@ -16,24 +16,24 @@ contract EtherToken is StandardToken {
     /*
      *  Constants
      */
-    string public constant name = "You Token";
-    string public constant symbol = "ETH";
+    string public constant name = "YOU Token";
+    string public constant symbol = "YOU";
     uint8 public constant decimals = 18;
 
     /*
      *  Public functions
      */
-    /// @dev Buys tokens with You, exchanging them 1:1
+    /// @dev Buys tokens with YOU, exchanging them 1:1
     function deposit()
         public
         payable
     {
         balances[msg.sender] = balances[msg.sender].add(msg.value);
         totalTokens = totalTokens.add(msg.value);
-        Deposit(msg.sender, msg.value);
+        emit Deposit(msg.sender, msg.value);
     }
 
-    /// @dev Sells tokens in exchange for You, exchanging them 1:1
+    /// @dev Sells tokens in exchange for YOU, exchanging them 1:1
     /// @param value Number of tokens to sell
     function withdraw(uint value)
         public
@@ -42,6 +42,6 @@ contract EtherToken is StandardToken {
         balances[msg.sender] = balances[msg.sender].sub(value);
         totalTokens = totalTokens.sub(value);
         msg.sender.transfer(value);
-        Withdrawal(msg.sender, value);
+        emit Withdrawal(msg.sender, value);
     }
 }

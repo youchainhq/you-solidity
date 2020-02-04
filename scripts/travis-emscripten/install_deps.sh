@@ -35,8 +35,14 @@ echo -en 'travis_fold:start:installing_dependencies\\r'
 test -e boost_1_70_0_install/include/boost/version.hpp || (
 rm -rf boost_1_70_0
 rm -f boost.tar.gz
-wget -q 'https://sourceforge.net/projects/boost/files/boost/1.70.0/boost_1_70_0.tar.gz/download'\
- -O boost.tar.gz
+WORKSPACE=/root/project
+TMPFILE=$WORKSPACE/deps/downloads/boost.tar.gz
+if test -f $TMPFILE ; then
+    cp $TMPFILE boost.tar.gz
+else
+    wget -q 'https://sourceforge.net/projects/boost/files/boost/1.70.0/boost_1_70_0.tar.gz/download'\
+    -O boost.tar.gz
+fi
 test "$(shasum boost.tar.gz)" = "7804c782deb00f36ac80b1000b71a3707eadb620  boost.tar.gz"
 tar -xzf boost.tar.gz
 rm boost.tar.gz

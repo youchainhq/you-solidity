@@ -4,28 +4,28 @@ Contract Metadata
 
 .. index:: metadata, contract verification
 
-The Solidity compiler automatically generates a JSON file, the
-contract metadata, that contains information about the current contract.
-It can be used to query the compiler version, the sources used, the ABI
-and NatSpec documentation in order to more safely interact with the contract
-and to verify its source code.
+The Solidity compiler automatically generates a JSON file, the contract
+metadata, that contains information about the current contract. You can use
+this file to query the compiler version, the sources used, the ABI and NatSpec
+documentation to more safely interact with the contract and verify its source
+code.
 
 The compiler appends a Swarm hash of the metadata file to the end of the
 bytecode (for details, see below) of each contract, so that you can retrieve
 the file in an authenticated way without having to resort to a centralized
 data provider.
 
-Of course, you have to publish the metadata file to Swarm (or some other service)
-so that others can access it. The file can be output by using ``solc --metadata``
-and the file will be called ``ContractName_meta.json``.
-It will contain Swarm references to the source code, so you have to upload
-all source files and the metadata file.
+You have to publish the metadata file to Swarm (or another service) so that
+others can access it. You create the file by using the ``solc --metadata``
+command that generates a file called ``ContractName_meta.json``. It contains
+Swarm references to the source code, so you have to upload all source files and
+the metadata file.
 
 The metadata file has the following format. The example below is presented in a
 human-readable way. Properly formatted metadata should use quotes correctly,
 reduce whitespace to a minimum and sort the keys of all objects to arrive at a
-unique formatting.
-Comments are of course also not permitted and used here only for explanatory purposes.
+unique formatting. Comments are not permitted and used here only for
+explanatory purposes.
 
 .. code-block:: none
 
@@ -65,12 +65,29 @@ Comments are of course also not permitted and used here only for explanatory pur
       settings:
       {
         // Required for Solidity: Sorted list of remappings
-        remappings: [ ":g/dir" ],
-        // Optional: Optimizer settings (enabled defaults to false)
+        remappings: [ ":g=/dir" ],
+        // Optional: Optimizer settings. The fields "enabled" and "runs" are deprecated
+        // and are only given for backwards-compatibility.
         optimizer: {
           enabled: true,
-          runs: 500
+          runs: 500,
+          details: {
+            // peephole defaults to "true"
+            peephole: true,
+            // jumpdestRemover defaults to "true"
+            jumpdestRemover: true,
+            orderLiterals: false,
+            deduplicate: false,
+            cse: false,
+            constantOptimizer: false,
+            yul: false,
+            yulDetails: {}
+          }
         },
+        metadata: {
+          // Reflects the setting used in the input json, defaults to false
+          useLiteralContent: true
+        }
         // Required for Solidity: File and name of the contract or library this
         // metadata is created for.
         compilationTarget: {
@@ -93,45 +110,69 @@ Comments are of course also not permitted and used here only for explanatory pur
       }
     }
 
-.. note::
-    Note the ABI definition above has no fixed order. It can change with compiler versions.
+.. warning::
+  Since the bytecode of the resulting contract contains the metadata hash, any
+  change to the metadata results in a change of the bytecode. This includes
+  changes to a filename or path, and since the metadata includes a hash of all the
+  sources used, a single whitespace change results in different metadata, and
+  different bytecode.
 
 .. note::
-    Since the bytecode of the resulting contract contains the metadata hash, any change to
-    the metadata will result in a change of the bytecode. Furthermore, since the metadata
-    includes a hash of all the sources used, a single whitespace change in any of the source
-    codes will result in a different metadata, and subsequently a different bytecode.
+    Note the ABI definition above has no fixed order. It can change with compiler versions.
 
 Encoding of the Metadata Hash in the Bytecode
 =============================================
 
 Because we might support other ways to retrieve the metadata file in the future,
-the mapping ``{"bzzr0": <Swarm hash>}`` is stored
-`CBOR <https://tools.ietf.org/html/rfc7049>`_-encoded. Since the beginning of that
+the mapping ``{"bzzr1": <Swarm hash>, "solc": <compiler version>}`` is stored
+`CBOR <https://tools.ietf.org/html/rfc7049>`_-encoded. Since the mapping might
+contain more keys (see below) and the beginning of that
 encoding is not easy to find, its length is added in a two-byte big-endian
-encoding. The current version of the Solidity compiler thus adds the following
+encoding. The current version of the Solidity compiler usually adds the following
 to the end of the deployed bytecode::
 
-    0xa1 0x65 'b' 'z' 'z' 'r' '0' 0x58 0x20 <32 bytes swarm hash> 0x00 0x29
+    0xa2
+    0x65 'b' 'z' 'z' 'r' '1' 0x58 0x20 <32 bytes swarm hash>
+    0x64 's' 'o' 'l' 'c' 0x43 <3 byte version encoding>
+    0x00 0x32
 
 So in order to retrieve the data, the end of the deployed bytecode can be checked
 to match that pattern and use the Swarm hash to retrieve the file.
+
+Whereas release builds of solc use a 3 byte encoding of the version as shown
+above (one byte each for major, minor and patch version number), prerelease builds
+will instead use a complete version string including commit hash and build date.
+
+.. note::
+  The CBOR mapping can also contain other keys, so it is better to fully
+  decode the data instead of relying on it starting with ``0xa265``.
+  For example, if any experimental features that affect code generation
+  are used, the mapping will also contain ``"experimental": true``.
+
+.. note::
+  The compiler currently uses the "swarm version 1" hash of the metadata,
+  but this might change in the future, so do not rely on this sequence
+  to start with ``0xa2 0x65 'b' 'z' 'z' 'r' '1'``. We might also
+  add additional data to this CBOR structure, so the
+  best option is to use a proper CBOR parser.
+
 
 Usage for Automatic Interface Generation and NatSpec
 ====================================================
 
 The metadata is used in the following way: A component that wants to interact
-with a contract (e.g. Mist) retrieves the code of the contract, from that
+with a contract (e.g. Mist or any wallet) retrieves the code of the contract, from that
 the Swarm hash of a file which is then retrieved.
 That file is JSON-decoded into a structure like above.
 
 The component can then use the ABI to automatically generate a rudimentary
 user interface for the contract.
 
-Furthermore, Mist can use the userdoc to display a confirmation message to the user
-whenever they interact with the contract.
+Furthermore, the wallet can use the NatSpec user documentation to display a confirmation message to the user
+whenever they interact with the contract, together with requesting
+authorization for the transaction signature.
 
-Additional information about Ethereum Natural Specification (NatSpec) can be found `here <https://github.com/ethereum/wiki/wiki/Ethereum-Natural-Specification-Format>`_. 
+For additional information, read :doc:`Ethereum Natural Language Specification (NatSpec) format <natspec-format>`.
 
 Usage for Source Code Verification
 ==================================
@@ -144,3 +185,7 @@ bytecode is compared to the data of the creation transaction or ``CREATE`` opcod
 This automatically verifies the metadata since its hash is part of the bytecode.
 Excess data corresponds to the constructor input data, which should be decoded
 according to the interface and presented to the user.
+
+In the repository `source-verify <https://github.com/ethereum/source-verify>`_
+(`npm package <https://www.npmjs.com/package/source-verify>`_) you can see
+example code that shows how to use this feature.

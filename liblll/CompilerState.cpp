@@ -19,12 +19,12 @@
  * @date 2014
  */
 
-#include "CompilerState.h"
-#include "CodeFragment.h"
+#include <liblll/CompilerState.h>
+#include <liblll/CodeFragment.h>
 
 using namespace std;
 using namespace dev;
-using namespace dev::eth;
+using namespace dev::lll;
 
 CompilerState::CompilerState()
 {
@@ -44,7 +44,7 @@ CodeFragment const& CompilerState::getDef(std::string const& _s) const
 
 void CompilerState::populateStandard()
 {
-	static const string s = "{"
+	static string const s = "{"
 	"(def 'panic () (asm INVALID))"
 	// Alternative macro version of alloc, which is currently implemented in the parser
 	// "(def 'alloc (n) (raw (msize) (when n (pop (mload (+ (msize) (& (- n 1) (~ 0x1f))))))))"
@@ -75,8 +75,6 @@ void CompilerState::populateStandard()
 	"(def 'sha256 (val) { [0]:val (sha256 0 32) })"
 	"(def 'ripemd160 (val) { [0]:val (ripemd160 0 32) })"
 	"(def 'lu 1)"
-	"(def 'szabo 1000000000000)"
-	"(def 'finney 1000000000000000)"
 	"(def 'you 1000000000000000000)"
 	// these could be replaced by native instructions once supported by EVM
 	"(def 'shl (val shift) (mul val (exp 2 shift)))"

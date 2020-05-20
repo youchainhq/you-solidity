@@ -31,36 +31,53 @@
 using namespace std;
 using namespace yul;
 using namespace dev;
-using namespace dev::solidity;
 
-std::map<YulString, int> CompilabilityChecker::run(std::shared_ptr<Dialect> _dialect, Block const& _ast)
+map<YulString, int> CompilabilityChecker::run(
+	Dialect const& _dialect,
+	Object const& _object,
+	bool _optimizeStackAllocation
+)
 {
-	if (_dialect->flavour == AsmFlavour::Yul)
+	if (_dialect.flavour == AsmFlavour::Yul)
 		return {};
 
-	solAssert(_dialect->flavour == AsmFlavour::Strict, "");
+	yulAssert(_dialect.flavour == AsmFlavour::Strict, "");
 
-	solAssert(dynamic_cast<EVMDialect const*>(_dialect.get()), "");
-	shared_ptr<NoOutputEVMDialect> noOutputDialect = make_shared<NoOutputEVMDialect>(dynamic_pointer_cast<EVMDialect>(_dialect));
-
-	bool optimize = true;
-	yul::AsmAnalysisInfo analysisInfo =
-		yul::AsmAnalyzer::analyzeStrictAssertCorrect(noOutputDialect, _ast);
-
-	NoOutputAssembly assembly;
-	CodeTransform transform(assembly, analysisInfo, _ast, *noOutputDialect, optimize);
-	try
+	if (EVMDialect const* evmDialect = dynamic_cast<EVMDialect const*>(&_dialect))
 	{
-		transform(_ast);
-	}
-	catch (StackTooDeepError const&)
-	{
-		solAssert(!transform.stackErrors().empty(), "Got stack too deep exception that was not stored.");
-	}
+		NoOutputEVMDialect noOutputDialect(*evmDialect);
 
-	std::map<YulString, int> functions;
-	for (StackTooDeepError const& error: transform.stackErrors())
-		functions[error.functionName] = max(error.depth, functions[error.functionName]);
+		yul::AsmAnalysisInfo analysisInfo =
+			yul::AsmAnalyzer::analyzeStrictAssertCorrect(noOutputDialect, _object);
 
-	return functions;
+		BuiltinContext builtinContext;
+		builtinContext.currentObject = &_object;
+		for (auto name: _object.dataNames())
+			builtinContext.subIDs[name] = 1;
+		NoOutputAssembly assembly;
+		CodeTransform transform(
+			assembly,
+			analysisInfo,
+			*_object.code,
+			noOutputDialect,
+			builtinContext,
+			_optimizeStackAllocation
+		);
+		try
+		{
+			transform(*_object.code);
+		}
+		catch (StackTooDeepError const&)
+		{
+			yulAssert(!transform.stackErrors().empty(), "Got stack too deep exception that was not stored.");
+		}
+
+		std::map<YulString, int> functions;
+		for (StackTooDeepError const& error: transform.stackErrors())
+			functions[error.functionName] = max(error.depth, functions[error.functionName]);
+
+		return functions;
+	}
+	else
+		return {};
 }

@@ -188,11 +188,9 @@ namespace langutil
 	K(View, "view", 0)                                                 \
 	K(While, "while", 0)                                               \
 	\
-	/* You subdenominations */                                       \
-	K(SubLu, "lu", 0)                                                \
-	K(SubSzabo, "szabo", 0)                                            \
-	K(SubFinney, "finney", 0)                                          \
-	K(SubYou, "you", 0)                                            \
+	/* `you` subdenominations */                                       \
+	K(SubLu, "lu", 0)                                                  \
+	K(SubYou, "you", 0)                                                \
 	K(SubSecond, "seconds", 0)                                         \
 	K(SubMinute, "minutes", 0)                                         \
 	K(SubHour, "hours", 0)                                             \
@@ -221,6 +219,7 @@ namespace langutil
 	K(FalseLiteral, "false", 0)                                        \
 	T(Number, nullptr, 0)                                              \
 	T(StringLiteral, nullptr, 0)                                       \
+	T(HexStringLiteral, nullptr, 0)                                    \
 	T(CommentLiteral, nullptr, 0)                                      \
 	\
 	/* Identifiers (not keywords or future reserved words). */         \
@@ -308,7 +307,7 @@ namespace TokenTraits
 			|| op == Token::Pure || op == Token::View || op == Token::Payable;
 	}
 
-	constexpr bool isEtherSubdenomination(Token op) { return op == Token::SubLu || op == Token::SubSzabo || op == Token::SubFinney || op == Token::SubYou; }
+	constexpr bool isEtherSubdenomination(Token op) { return op == Token::SubLu || op == Token::SubYou; }
 	constexpr bool isTimeSubdenomination(Token op) { return op == Token::SubSecond || op == Token::SubMinute || op == Token::SubHour || op == Token::SubDay || op == Token::SubWeek || op == Token::SubYear; }
 	constexpr bool isReservedKeyword(Token op) { return (Token::Abstract <= op && op <= Token::Unchecked); }
 

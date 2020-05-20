@@ -24,17 +24,106 @@
 #include <libyul/Exceptions.h>
 
 #include <libdevcore/CommonData.h>
+#include <libdevcore/FixedHash.h>
+
+#include <boost/algorithm/string.hpp>
+
+#include <algorithm>
+#include <iterator>
+#include <sstream>
+#include <vector>
 
 using namespace std;
 using namespace dev;
 using namespace yul;
 
+using boost::split;
+using boost::is_any_of;
+
+string yul::reindent(string const& _code)
+{
+	int constexpr indentationWidth = 4;
+
+	auto const static countBraces = [](string const& _s) noexcept -> int
+	{
+		auto const i = _s.find("//");
+		auto const e = i == _s.npos ? end(_s) : next(begin(_s), i);
+		auto const opening = count_if(begin(_s), e, [](auto ch) { return ch == '{' || ch == '('; });
+		auto const closing = count_if(begin(_s), e, [](auto ch) { return ch == '}' || ch == ')'; });
+		return opening - closing;
+	};
+
+	vector<string> lines;
+	split(lines, _code, is_any_of("\n"));
+	for (string& line: lines)
+		boost::trim(line);
+
+	stringstream out;
+	int depth = 0;
+
+	for (string const& line: lines)
+	{
+		int const diff = countBraces(line);
+		if (diff < 0)
+			depth += diff;
+
+		if (!line.empty())
+		{
+			for (int i = 0; i < depth * indentationWidth; ++i)
+				out << ' ';
+			out << line;
+		}
+		out << '\n';
+
+		if (diff > 0)
+			depth += diff;
+	}
+
+	return out.str();
+}
+
 u256 yul::valueOfNumberLiteral(Literal const& _literal)
 {
-	assertThrow(_literal.kind == LiteralKind::Number, OptimizerException, "");
+	yulAssert(_literal.kind == LiteralKind::Number, "Expected number literal!");
+
 	std::string const& literalString = _literal.value.str();
-	assertThrow(isValidDecimal(literalString) || isValidHex(literalString), OptimizerException, "");
+	yulAssert(isValidDecimal(literalString) || isValidHex(literalString), "Invalid number literal!");
 	return u256(literalString);
+}
+
+u256 yul::valueOfStringLiteral(Literal const& _literal)
+{
+	yulAssert(_literal.kind == LiteralKind::String, "Expected string literal!");
+	yulAssert(_literal.value.str().size() <= 32, "Literal string too long!");
+
+	return u256(h256(_literal.value.str(), h256::FromBinary, h256::AlignLeft));
+}
+
+u256 yul::valueOfBoolLiteral(Literal const& _literal)
+{
+	yulAssert(_literal.kind == LiteralKind::Boolean, "Expected bool literal!");
+
+	if (_literal.value == "true"_yulstring)
+		return u256(1);
+	else if (_literal.value == "false"_yulstring)
+		return u256(0);
+
+	yulAssert(false, "Unexpected bool literal value!");
+}
+
+u256 yul::valueOfLiteral(Literal const& _literal)
+{
+	switch (_literal.kind)
+	{
+		case LiteralKind::Number:
+			return valueOfNumberLiteral(_literal);
+		case LiteralKind::Boolean:
+			return valueOfBoolLiteral(_literal);
+		case LiteralKind::String:
+			return valueOfStringLiteral(_literal);
+		default:
+			yulAssert(false, "Unexpected literal kind!");
+	}
 }
 
 template<>
@@ -47,4 +136,10 @@ bool Less<Literal>::operator()(Literal const& _lhs, Literal const& _rhs) const
 		return valueOfNumberLiteral(_lhs) < valueOfNumberLiteral(_rhs);
 	else
 		return _lhs.value < _rhs.value;
+}
+
+bool SwitchCaseCompareByLiteralValue::operator()(Case const* _lhs, Case const* _rhs) const
+{
+	yulAssert(_lhs && _rhs, "");
+	return Less<Literal*>{}(_lhs->value.get(), _rhs->value.get());
 }

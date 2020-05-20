@@ -1,18 +1,18 @@
 /*
-    This file is part of solidity.
+	This file is part of solidity.
 
-    solidity is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	solidity is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    solidity is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	solidity is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with solidity.  If not, see <http://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with solidity.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
  * @author Christian <c@ethdev.com>
@@ -22,11 +22,10 @@
 
 #pragma once
 
+#include <libsolidity/ast/ASTForward.h>
+#include <boost/noncopyable.hpp>
 #include <map>
 #include <set>
-#include <boost/noncopyable.hpp>
-
-#include <libsolidity/ast/ASTForward.h>
 
 namespace dev
 {
@@ -58,9 +57,12 @@ public:
 	/// @returns whether declaration is valid, and if not also returns previous declaration.
 	Declaration const* conflictingDeclaration(Declaration const& _declaration, ASTString const* _name = nullptr) const;
 
-	/// Activates a previously inactive (invisible) variable. To be used in C99 scpoing for
+	/// Activates a previously inactive (invisible) variable. To be used in C99 scoping for
 	/// VariableDeclarationStatements.
 	void activateVariable(ASTString const& _name);
+
+	/// @returns true if declaration is currently invisible.
+	bool isInvisible(ASTString const& _name) const;
 
 	/// @returns existing declaration names similar to @a _name.
 	/// Searches this and all parent containers.

@@ -22,8 +22,8 @@
 #pragma once
 
 #include <libsolidity/interface/CompilerStack.h>
-#include <libsolidity/interface/AssemblyStack.h>
-#include <libsolidity/interface/EVMVersion.h>
+#include <libyul/AssemblyStack.h>
+#include <liblangutil/EVMVersion.h>
 
 #include <boost/program_options.hpp>
 #include <boost/filesystem/path.hpp>
@@ -41,8 +41,6 @@ enum class DocumentationType: uint8_t;
 class CommandLineInterface
 {
 public:
-	CommandLineInterface() {}
-
 	/// Parse command line arguments and return false if we should not continue
 	bool parseArguments(int _argc, char** _argv);
 	/// Parse the files and create source code objects
@@ -54,8 +52,12 @@ public:
 private:
 	bool link();
 	void writeLinkedFiles();
+	/// @returns the ``// <identifier> -> name`` hint for library placeholders.
+	static std::string libraryPlaceholderHint(std::string const& _libraryName);
+	/// @returns the full object with library placeholder hints in hex.
+	static std::string objectWithLinkRefsHex(eth::LinkerObject const& _obj);
 
-	bool assemble(AssemblyStack::Language _language, AssemblyStack::Machine _targetMachine);
+	bool assemble(yul::AssemblyStack::Language _language, yul::AssemblyStack::Machine _targetMachine, bool _optimize);
 
 	void outputCompilationResults();
 
@@ -63,6 +65,8 @@ private:
 	void handleAst(std::string const& _argStr);
 	void handleBinary(std::string const& _contract);
 	void handleOpcode(std::string const& _contract);
+	void handleIR(std::string const& _contract);
+	void handleEWasm(std::string const& _contract);
 	void handleBytecode(std::string const& _contract);
 	void handleSignatureHashes(std::string const& _contract);
 	void handleMetadata(std::string const& _contract);
@@ -97,6 +101,8 @@ private:
 	boost::program_options::variables_map m_args;
 	/// map of input files to source code strings
 	std::map<std::string, std::string> m_sourceCodes;
+	/// list of remappings
+	std::vector<dev::solidity::CompilerStack::Remapping> m_remappings;
 	/// list of allowed directories to read files from
 	std::vector<boost::filesystem::path> m_allowedDirectories;
 	/// map of library names to addresses
@@ -104,7 +110,9 @@ private:
 	/// Solidity compiler stack
 	std::unique_ptr<dev::solidity::CompilerStack> m_compiler;
 	/// EVM version to use
-	EVMVersion m_evmVersion;
+	langutil::EVMVersion m_evmVersion;
+	/// Whether or not to colorize diagnostics output.
+	bool m_coloredOutput = true;
 };
 
 }

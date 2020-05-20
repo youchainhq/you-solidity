@@ -26,9 +26,10 @@
 #include <libevmasm/PathGasMeter.h>
 #include <libsolidity/ast/AST.h>
 #include <libsolidity/interface/GasEstimator.h>
-#include <libsolidity/interface/SourceReferenceFormatter.h>
+#include <liblangutil/SourceReferenceFormatter.h>
 
 using namespace std;
+using namespace langutil;
 using namespace dev::eth;
 using namespace dev::solidity;
 using namespace dev::test;
@@ -43,11 +44,10 @@ namespace test
 class GasMeterTestFramework: public SolidityExecutionFramework
 {
 public:
-	GasMeterTestFramework() { }
 	void compile(string const& _sourceCode)
 	{
-		m_compiler.reset(false);
-		m_compiler.addSource("", "pragma solidity >=0.0;\n" + _sourceCode);
+		m_compiler.reset();
+		m_compiler.setSources({{"", "pragma solidity >=0.0;\n" + _sourceCode}});
 		m_compiler.setOptimiserSettings(dev::test::Options::get().optimize);
 		m_compiler.setEVMVersion(m_evmVersion);
 		BOOST_REQUIRE_MESSAGE(m_compiler.compile(), "Compiling contract failed");
@@ -61,7 +61,7 @@ public:
 		);
 	}
 
-	void testCreationTimeGas(string const& _sourceCode)
+	void testCreationTimeGas(string const& _sourceCode, u256 const& _tolerance = u256(0))
 	{
 		compileAndRun(_sourceCode);
 		auto state = make_shared<KnownState>();
@@ -73,13 +73,19 @@ public:
 		// costs for transaction
 		gas += gasForTransaction(m_compiler.object(m_compiler.lastContractName()).bytecode, true);
 
-		BOOST_REQUIRE(!gas.isInfinite);
-		BOOST_CHECK_EQUAL(gas.value, m_gasUsed);
+		// Skip the tests when we force ABIEncoderV2.
+		// TODO: We should enable this again once the yul optimizer is activated.
+		if (!dev::test::Options::get().useABIEncoderV2)
+		{
+			BOOST_REQUIRE(!gas.isInfinite);
+			BOOST_CHECK_LE(m_gasUsed, gas.value);
+			BOOST_CHECK_LE(gas.value - _tolerance, m_gasUsed);
+		}
 	}
 
 	/// Compares the gas computed by PathGasMeter for the given signature (but unknown arguments)
 	/// against the actual gas usage computed by the VM on the given set of argument variants.
-	void testRunTimeGas(string const& _sig, vector<bytes> _argumentVariants)
+	void testRunTimeGas(string const& _sig, vector<bytes> _argumentVariants, u256 const& _tolerance = u256(0))
 	{
 		u256 gasUsed = 0;
 		GasMeter::GasConsumption gas;
@@ -87,6 +93,7 @@ public:
 		for (bytes const& arguments: _argumentVariants)
 		{
 			sendMessage(hash.asBytes() + arguments, false, 0);
+			BOOST_CHECK(m_transactionSuccessful);
 			gasUsed = max(gasUsed, m_gasUsed);
 			gas = max(gas, gasForTransaction(hash.asBytes() + arguments, false));
 		}
@@ -95,15 +102,22 @@ public:
 			*m_compiler.runtimeAssemblyItems(m_compiler.lastContractName()),
 			_sig
 		);
-		BOOST_REQUIRE(!gas.isInfinite);
-		BOOST_CHECK_EQUAL(gas.value, m_gasUsed);
+		// Skip the tests when we force ABIEncoderV2.
+		// TODO: We should enable this again once the yul optimizer is activated.
+		if (!dev::test::Options::get().useABIEncoderV2)
+		{
+			BOOST_REQUIRE(!gas.isInfinite);
+			BOOST_CHECK_LE(m_gasUsed, gas.value);
+			BOOST_CHECK_LE(gas.value - _tolerance, m_gasUsed);
+		}
 	}
 
 	static GasMeter::GasConsumption gasForTransaction(bytes const& _data, bool _isCreation)
 	{
+		auto evmVersion = dev::test::Options::get().evmVersion();
 		GasMeter::GasConsumption gas = _isCreation ? GasCosts::txCreateGas : GasCosts::txGas;
 		for (auto i: _data)
-			gas += i != 0 ? GasCosts::txDataNonZeroGas : GasCosts::txDataZeroGas;
+			gas += i != 0 ? GasCosts::txDataNonZeroGas(evmVersion) : GasCosts::txDataZeroGas;
 		return gas;
 	}
 
@@ -118,10 +132,10 @@ BOOST_AUTO_TEST_CASE(non_overlapping_filtered_costs)
 	char const* sourceCode = R"(
 		contract test {
 			bytes x;
-			function f(uint a) returns (uint b) {
+			function f(uint a) public returns (uint b) {
 				x.length = a;
 				for (; a < 200; ++a) {
-					x[a] = 9;
+					x[a] = 0x09;
 					b = a * a;
 				}
 				return f(a - 1);
@@ -136,8 +150,7 @@ BOOST_AUTO_TEST_CASE(non_overlapping_filtered_costs)
 			if (first->first->location().intersects(second->first->location()))
 			{
 				BOOST_CHECK_MESSAGE(false, "Source locations should not overlap!");
-				auto scannerFromSource = [&](string const& _sourceName) -> Scanner const& { return m_compiler.scanner(_sourceName); };
-				SourceReferenceFormatter formatter(cout, scannerFromSource);
+				SourceReferenceFormatter formatter(cout);
 
 				formatter.printSourceLocation(&first->first->location());
 				formatter.printSourceLocation(&second->first->location());
@@ -151,8 +164,8 @@ BOOST_AUTO_TEST_CASE(simple_contract)
 	char const* sourceCode = R"(
 		contract test {
 			bytes32 public shaValue;
-			function f(uint a) {
-				shaValue = keccak256(a);
+			function f(uint a) public {
+				shaValue = keccak256(abi.encodePacked(a));
 			}
 		}
 	)";
@@ -164,8 +177,8 @@ BOOST_AUTO_TEST_CASE(store_keccak256)
 	char const* sourceCode = R"(
 		contract test {
 			bytes32 public shaValue;
-			function test(uint a) {
-				shaValue = keccak256(a);
+			constructor() public {
+				shaValue = keccak256(abi.encodePacked(this));
 			}
 		}
 	)";
@@ -178,14 +191,14 @@ BOOST_AUTO_TEST_CASE(updating_store)
 		contract test {
 			uint data;
 			uint data2;
-			function test() {
+			constructor() public {
 				data = 1;
 				data = 2;
 				data2 = 0;
 			}
 		}
 	)";
-	testCreationTimeGas(sourceCode);
+	testCreationTimeGas(sourceCode, m_evmVersion < EVMVersion::constantinople() ? u256(0) : u256(9600));
 }
 
 BOOST_AUTO_TEST_CASE(branches)
@@ -194,7 +207,7 @@ BOOST_AUTO_TEST_CASE(branches)
 		contract test {
 			uint data;
 			uint data2;
-			function f(uint x) {
+			function f(uint x) public {
 				if (x > 7)
 					data2 = 1;
 				else
@@ -212,7 +225,7 @@ BOOST_AUTO_TEST_CASE(function_calls)
 		contract test {
 			uint data;
 			uint data2;
-			function f(uint x) {
+			function f(uint x) public {
 				if (x > 7)
 					data2 = g(x**8) + 1;
 				else
@@ -233,13 +246,13 @@ BOOST_AUTO_TEST_CASE(multiple_external_functions)
 		contract test {
 			uint data;
 			uint data2;
-			function f(uint x) {
+			function f(uint x) public {
 				if (x > 7)
 					data2 = g(x**8) + 1;
 				else
 					data = 1;
 			}
-			function g(uint x) returns (uint) {
+			function g(uint x) public returns (uint) {
 				return data2;
 			}
 		}
@@ -253,10 +266,10 @@ BOOST_AUTO_TEST_CASE(exponent_size)
 {
 	char const* sourceCode = R"(
 		contract A {
-			function g(uint x) returns (uint) {
+			function g(uint x) public returns (uint) {
 				return x ** 0x100;
 			}
-			function h(uint x) returns (uint) {
+			function h(uint x) public returns (uint) {
 				return x ** 0x10000;
 			}
 		}
@@ -270,7 +283,7 @@ BOOST_AUTO_TEST_CASE(balance_gas)
 {
 	char const* sourceCode = R"(
 		contract A {
-			function lookup_balance(address a) returns (uint) {
+			function lookup_balance(address a) public returns (uint) {
 				return a.balance;
 			}
 		}
@@ -283,7 +296,7 @@ BOOST_AUTO_TEST_CASE(extcodesize_gas)
 {
 	char const* sourceCode = R"(
 		contract A {
-			function f() returns (uint _s) {
+			function f() public returns (uint _s) {
 				assembly {
 					_s := extcodesize(0x30)
 				}
@@ -301,7 +314,7 @@ BOOST_AUTO_TEST_CASE(regular_functions_exclude_fallback)
 	char const* sourceCode = R"(
 		contract A {
 			uint public x;
-			function() { x = 2; }
+			function() external { x = 2; }
 		}
 	)";
 	testCreationTimeGas(sourceCode);
@@ -315,7 +328,7 @@ BOOST_AUTO_TEST_CASE(complex_control_flow)
 	// we previously considered. This of course reduces accuracy.
 	char const* sourceCode = R"(
 		contract log {
-			function ln(int128 x) constant returns (int128 result) {
+			function ln(int128 x) public pure returns (int128 result) {
 				int128 t = x / 256;
 				int128 y = 5545177;
 				x = t;

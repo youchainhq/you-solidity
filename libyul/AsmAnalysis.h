@@ -30,11 +30,10 @@
 #include <libyul/backends/evm/AbstractAssembly.h>
 #include <libyul/backends/evm/EVMDialect.h>
 
-#include <boost/variant.hpp>
-#include <boost/optional.hpp>
-
 #include <functional>
+#include <list>
 #include <memory>
+#include <optional>
 
 namespace langutil
 {
@@ -52,32 +51,33 @@ struct AsmAnalysisInfo;
  * references and performs other checks.
  * If all these checks pass, code generation should not throw errors.
  */
-class AsmAnalyzer: public boost::static_visitor<bool>
+class AsmAnalyzer
 {
 public:
 	explicit AsmAnalyzer(
 		AsmAnalysisInfo& _analysisInfo,
 		langutil::ErrorReporter& _errorReporter,
-		boost::optional<langutil::Error::Type> _errorTypeForLoose,
-		std::shared_ptr<Dialect> _dialect,
-		ExternalIdentifierAccess::Resolver const& _resolver = ExternalIdentifierAccess::Resolver()
+		std::optional<langutil::Error::Type> _errorTypeForLoose,
+		Dialect const& _dialect,
+		ExternalIdentifierAccess::Resolver const& _resolver = ExternalIdentifierAccess::Resolver(),
+		std::set<YulString> const& _dataNames = {}
 	):
 		m_resolver(_resolver),
 		m_info(_analysisInfo),
 		m_errorReporter(_errorReporter),
-		m_dialect(std::move(_dialect)),
-		m_errorTypeForLoose(_errorTypeForLoose)
+		m_dialect(_dialect),
+		m_errorTypeForLoose(_errorTypeForLoose),
+		m_dataNames(_dataNames)
 	{
-		if (EVMDialect const* evmDialect = dynamic_cast<EVMDialect const*>(m_dialect.get()))
+		if (EVMDialect const* evmDialect = dynamic_cast<EVMDialect const*>(&m_dialect))
 			m_evmVersion = evmDialect->evmVersion();
 	}
 
 	bool analyze(Block const& _block);
 
-	static AsmAnalysisInfo analyzeStrictAssertCorrect(
-		std::shared_ptr<Dialect> _dialect,
-		Block const& _ast
-	);
+	/// Performs analysis on the outermost code of the given object and returns the analysis info.
+	/// Asserts on failure.
+	static AsmAnalysisInfo analyzeStrictAssertCorrect(Dialect const& _dialect, Object const& _object);
 
 	bool operator()(Instruction const&);
 	bool operator()(Literal const& _literal);
@@ -93,6 +93,8 @@ public:
 	bool operator()(If const& _if);
 	bool operator()(Switch const& _switch);
 	bool operator()(ForLoop const& _forLoop);
+	bool operator()(Break const&);
+	bool operator()(Continue const&);
 	bool operator()(Block const& _block);
 
 private:
@@ -106,7 +108,7 @@ private:
 
 	Scope& scope(Block const* _block);
 	void expectValidType(std::string const& type, langutil::SourceLocation const& _location);
-	void warnOnInstructions(dev::solidity::Instruction _instr, langutil::SourceLocation const& _location);
+	void warnOnInstructions(dev::eth::Instruction _instr, langutil::SourceLocation const& _location);
 
 	/// Depending on @a m_flavour and @a m_errorTypeForLoose, throws an internal compiler
 	/// exception (if the flavour is not Loose), reports an error/warning
@@ -122,8 +124,11 @@ private:
 	AsmAnalysisInfo& m_info;
 	langutil::ErrorReporter& m_errorReporter;
 	langutil::EVMVersion m_evmVersion;
-	std::shared_ptr<Dialect> m_dialect;
-	boost::optional<langutil::Error::Type> m_errorTypeForLoose;
+	Dialect const& m_dialect;
+	std::optional<langutil::Error::Type> m_errorTypeForLoose;
+	/// Names of data objects to be referenced by builtin functions with literal arguments.
+	std::set<YulString> m_dataNames;
+	ForLoop const* m_currentForLoop = nullptr;
 };
 
 }

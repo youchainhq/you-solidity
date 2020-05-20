@@ -1,0 +1,5 @@
+FROM alpine
+LABEL maintainer="darlzan<darlzan@foxmail.com>"
+
+COPY upload/solc-static-linux /usr/local/bin/solc
+ENTRYPOINT ["/usr/local/bin/solc"]

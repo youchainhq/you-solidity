@@ -32,7 +32,7 @@ using namespace yul;
 
 bool SyntacticallyEqual::operator()(Expression const& _lhs, Expression const& _rhs)
 {
-	return boost::apply_visitor([this](auto&& _lhsExpr, auto&& _rhsExpr) -> bool {
+	return std::visit([this](auto&& _lhsExpr, auto&& _rhsExpr) -> bool {
 		// ``this->`` is redundant, but required to work around a bug present in gcc 6.x.
 		return this->expressionEqual(_lhsExpr, _rhsExpr);
 	}, _lhs, _rhs);
@@ -40,7 +40,7 @@ bool SyntacticallyEqual::operator()(Expression const& _lhs, Expression const& _r
 
 bool SyntacticallyEqual::operator()(Statement const& _lhs, Statement const& _rhs)
 {
-	return boost::apply_visitor([this](auto&& _lhsStmt, auto&& _rhsStmt) -> bool {
+	return std::visit([this](auto&& _lhsStmt, auto&& _rhsStmt) -> bool {
 		// ``this->`` is redundant, but required to work around a bug present in gcc 6.x.
 		return this->statementEqual(_lhsStmt, _rhsStmt);
 	}, _lhs, _rhs);
@@ -129,11 +129,8 @@ bool SyntacticallyEqual::statementEqual(If const& _lhs, If const& _rhs)
 
 bool SyntacticallyEqual::statementEqual(Switch const& _lhs, Switch const& _rhs)
 {
-	static auto const sortCasesByValue = [](Case const* _lhsCase, Case const* _rhsCase) -> bool {
-		return Less<Literal*>{}(_lhsCase->value.get(), _rhsCase->value.get());
-	};
-	std::set<Case const*, decltype(sortCasesByValue)> lhsCases(sortCasesByValue);
-	std::set<Case const*, decltype(sortCasesByValue)> rhsCases(sortCasesByValue);
+	std::set<Case const*, SwitchCaseCompareByLiteralValue> lhsCases;
+	std::set<Case const*, SwitchCaseCompareByLiteralValue> rhsCases;
 	for (auto const& lhsCase: _lhs.cases)
 		lhsCases.insert(&lhsCase);
 	for (auto const& rhsCase: _rhs.cases)

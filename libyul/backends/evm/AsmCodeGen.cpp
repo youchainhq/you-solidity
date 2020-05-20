@@ -57,7 +57,12 @@ int EthAssemblyAdapter::stackHeight() const
 	return m_assembly.deposit();
 }
 
-void EthAssemblyAdapter::appendInstruction(solidity::Instruction _instruction)
+void EthAssemblyAdapter::setStackHeight(int height)
+{
+	m_assembly.setDeposit(height);
+}
+
+void EthAssemblyAdapter::appendInstruction(dev::eth::Instruction _instruction)
 {
 	m_assembly.append(_instruction);
 }
@@ -94,7 +99,7 @@ void EthAssemblyAdapter::appendLinkerSymbol(std::string const& _linkerSymbol)
 
 void EthAssemblyAdapter::appendJump(int _stackDiffAfter)
 {
-	appendInstruction(solidity::Instruction::JUMP);
+	appendInstruction(dev::eth::Instruction::JUMP);
 	m_assembly.adjustDeposit(_stackDiffAfter);
 }
 
@@ -107,25 +112,25 @@ void EthAssemblyAdapter::appendJumpTo(LabelID _labelId, int _stackDiffAfter)
 void EthAssemblyAdapter::appendJumpToIf(LabelID _labelId)
 {
 	appendLabelReference(_labelId);
-	appendInstruction(solidity::Instruction::JUMPI);
+	appendInstruction(dev::eth::Instruction::JUMPI);
 }
 
 void EthAssemblyAdapter::appendBeginsub(LabelID, int)
 {
 	// TODO we could emulate that, though
-	solAssert(false, "BEGINSUB not implemented for EVM 1.0");
+	yulAssert(false, "BEGINSUB not implemented for EVM 1.0");
 }
 
 void EthAssemblyAdapter::appendJumpsub(LabelID, int, int)
 {
 	// TODO we could emulate that, though
-	solAssert(false, "JUMPSUB not implemented for EVM 1.0");
+	yulAssert(false, "JUMPSUB not implemented for EVM 1.0");
 }
 
 void EthAssemblyAdapter::appendReturnsub(int, int)
 {
 	// TODO we could emulate that, though
-	solAssert(false, "RETURNSUB not implemented for EVM 1.0");
+	yulAssert(false, "RETURNSUB not implemented for EVM 1.0");
 }
 
 void EthAssemblyAdapter::appendAssemblySize()
@@ -169,7 +174,7 @@ AbstractAssembly::SubID EthAssemblyAdapter::appendData(bytes const& _data)
 EthAssemblyAdapter::LabelID EthAssemblyAdapter::assemblyTagToIdentifier(eth::AssemblyItem const& _tag)
 {
 	u256 id = _tag.data();
-	solAssert(id <= std::numeric_limits<LabelID>::max(), "Tag id too large.");
+	yulAssert(id <= std::numeric_limits<LabelID>::max(), "Tag id too large.");
 	return LabelID(id);
 }
 
@@ -180,17 +185,18 @@ void CodeGenerator::assemble(
 	langutil::EVMVersion _evmVersion,
 	ExternalIdentifierAccess const& _identifierAccess,
 	bool _useNamedLabelsForFunctions,
-	bool _optimize
+	bool _optimizeStackAllocation
 )
 {
 	EthAssemblyAdapter assemblyAdapter(_assembly);
-	shared_ptr<EVMDialect> dialect = EVMDialect::strictAssemblyForEVM(_evmVersion);
+	BuiltinContext builtinContext;
 	CodeTransform transform(
 		assemblyAdapter,
 		_analysisInfo,
 		_parsedData,
-		*dialect,
-		_optimize,
+		EVMDialect::strictAssemblyForEVM(_evmVersion),
+		builtinContext,
+		_optimizeStackAllocation,
 		false,
 		_identifierAccess,
 		_useNamedLabelsForFunctions
@@ -201,11 +207,11 @@ void CodeGenerator::assemble(
 	}
 	catch (StackTooDeepError const& _e)
 	{
-		BOOST_THROW_EXCEPTION(
-			InternalCompilerError() << errinfo_comment(
-				"Stack too deep when compiling inline assembly" +
-				(_e.comment() ? ": " + *_e.comment() : ".")
-			));
+		yulAssert(
+			false,
+			"Stack too deep when compiling inline assembly" +
+			(_e.comment() ? ": " + *_e.comment() : ".")
+		);
 	}
-	solAssert(transform.stackErrors().empty(), "Stack errors present but not thrown.");
+	yulAssert(transform.stackErrors().empty(), "Stack errors present but not thrown.");
 }

@@ -27,8 +27,8 @@
 #include <libyul/AsmDataForward.h>
 #include <libyul/AsmScope.h>
 
-#include <boost/variant.hpp>
-#include <boost/optional.hpp>
+#include <optional>
+#include <stack>
 
 namespace langutil
 {
@@ -57,6 +57,20 @@ struct CodeTransformContext
 	std::map<Scope::Function const*, AbstractAssembly::LabelID> functionEntryIDs;
 	std::map<Scope::Variable const*, int> variableStackHeights;
 	std::map<Scope::Variable const*, unsigned> variableReferences;
+
+	struct JumpInfo
+	{
+		AbstractAssembly::LabelID label;  ///< Jump's LabelID to jump to.
+		int targetStackHeight;            ///< Stack height after the jump.
+	};
+
+	struct ForLoopLabels
+	{
+		JumpInfo post; ///< Jump info for jumping to post branch.
+		JumpInfo done; ///< Jump info for jumping to done branch.
+	};
+
+	std::stack<ForLoopLabels> forLoopStack;
 };
 
 /**
@@ -91,7 +105,7 @@ private:
 	Scope* m_scope = nullptr;
 };
 
-class CodeTransform: public boost::static_visitor<>
+class CodeTransform
 {
 public:
 	/// Create the code transformer.
@@ -105,6 +119,7 @@ public:
 		AsmAnalysisInfo& _analysisInfo,
 		Block const& _block,
 		EVMDialect const& _dialect,
+		BuiltinContext& _builtinContext,
 		bool _allowStackOpt = false,
 		bool _evm15 = false,
 		ExternalIdentifierAccess const& _identifierAccess = ExternalIdentifierAccess(),
@@ -115,6 +130,7 @@ public:
 		_block,
 		_allowStackOpt,
 		_dialect,
+		_builtinContext,
 		_evm15,
 		_identifierAccess,
 		_useNamedLabelsForFunctions,
@@ -135,6 +151,7 @@ protected:
 		Block const& _block,
 		bool _allowStackOpt,
 		EVMDialect const& _dialect,
+		BuiltinContext& _builtinContext,
 		bool _evm15,
 		ExternalIdentifierAccess const& _identifierAccess,
 		bool _useNamedLabelsForFunctions,
@@ -166,6 +183,8 @@ public:
 	void operator()(Switch const& _switch);
 	void operator()(FunctionDefinition const&);
 	void operator()(ForLoop const&);
+	void operator()(Break const&);
+	void operator()(Continue const&);
 	void operator()(Block const& _block);
 
 private:
@@ -199,10 +218,15 @@ private:
 	/// and corrects the stack height to the target stack height.
 	void stackError(StackTooDeepError _error, int _targetStackSize);
 
+	/// Ensures stack height is down to @p _targetDepth by appending POP instructions to the output assembly.
+	/// Returns the number of POP statements that have been appended.
+	int appendPopUntil(int _targetDepth);
+
 	AbstractAssembly& m_assembly;
 	AsmAnalysisInfo& m_info;
 	Scope* m_scope = nullptr;
 	EVMDialect const& m_dialect;
+	BuiltinContext& m_builtinContext;
 	bool const m_allowStackOpt = true;
 	bool const m_evm15 = false;
 	bool const m_useNamedLabelsForFunctions = false;

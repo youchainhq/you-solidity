@@ -1,3 +1,607 @@
+### 0.5.16 (2020-02-03)
+
+YOUChain Features:
+
+* Delete token units `szabo` and `finney`
+
+Bugfixes:
+ * Yul Optimizer: Fix bug in redundant assignment remover in combination with break and continue statements.
+
+
+### 0.5.15 (2019-12-17)
+
+Bugfixes:
+ * Yul Optimizer: Fix incorrect redundant load optimization crossing user-defined functions that contain for-loops with memory / storage writes.
+
+### 0.5.14 (2019-12-09)
+
+Language Features:
+ * Allow to obtain the selector of public or external library functions via a member ``.selector``.
+ * Inline Assembly: Support constants that reference other constants.
+ * Parser: Allow splitting hexadecimal and regular string literals into multiple parts.
+
+
+Compiler Features:
+ * Commandline Interface: Allow translation from yul / strict assembly to EWasm using ``solc --yul --yul-dialect evm --machine eWasm``
+ * Set the default EVM version to "Istanbul".
+ * SMTChecker: Add support to constructors including constructor inheritance.
+ * Yul: When compiling via Yul, string literals from the Solidity code are kept as string literals if every character is safely printable.
+ * Yul Optimizer: Perform loop-invariant code motion.
+
+
+Bugfixes:
+ * SMTChecker: Fix internal error when using ``abi.decode``.
+ * SMTChecker: Fix internal error when using arrays or mappings of functions.
+ * SMTChecker: Fix internal error in array of structs type.
+ * Version Checker: ``^0`` should match ``0.5.0``, but no prerelease.
+ * Yul: Consider infinite loops and recursion to be not removable.
+
+
+Build System:
+ * Update to emscripten version 1.39.3.
+
+
+### 0.5.13 (2019-11-14)
+
+Language Features:
+ * Allow to obtain the address of a linked library with ``address(LibraryName)``.
+
+
+Compiler Features:
+ * Code Generator: Use SELFBALANCE opcode for ``address(this).balance`` if using Istanbul EVM.
+ * EWasm: Experimental EWasm binary output via ``--ewasm`` and as documented in standard-json.
+ * SMTChecker: Add break/continue support to the CHC engine.
+ * SMTChecker: Support assignments to multi-dimensional arrays and mappings.
+ * SMTChecker: Support inheritance and function overriding.
+ * Standard JSON Interface: Output the storage layout of a contract when artifact ``storageLayout`` is requested.
+ * TypeChecker: List possible candidates when overload resolution fails.
+ * TypeChecker: Disallow variables of library types.
+
+
+Bugfixes:
+ * Code Generator: Fixed a faulty assert that would wrongly trigger for array sizes exceeding unsigned integer.
+ * SMTChecker: Fix internal error when accessing indices of fixed bytes.
+ * SMTChecker: Fix internal error when using function pointers as arguments.
+ * SMTChecker: Fix internal error when implicitly converting string literals to fixed bytes.
+ * Type Checker: Disallow constructor of the same class to be used as modifier.
+ * Type Checker: Treat magic variables as unknown identifiers in inline assembly.
+ * Code Generator: Fix internal error when trying to convert ``super`` to a different type
+
+
+
+### 0.5.12 (2019-10-01)
+
+Language Features:
+ * Type Checker: Allow assignment to external function arguments except for reference types.
+
+
+Compiler Features:
+ * ABI Output: Change sorting order of functions from selector to kind, name.
+ * Optimizer: Add rule that replaces the BYTE opcode by 0 if the first argument is larger than 31.
+ * SMTChecker: Add loop support to the CHC engine.
+ * Yul Optimizer: Take side-effect-freeness of user-defined functions into account.
+ * Yul Optimizer: Remove redundant mload/sload operations.
+ * Yul Optimizer: Use the fact that branch conditions have certain value inside the branch.
+
+
+Bugfixes:
+ * Code Generator: Fix internal error when popping a dynamic storage array of mappings.
+ * Name Resolver: Fix wrong source location when warning on shadowed aliases in import declarations.
+ * Scanner: Fix multi-line natspec comment parsing with triple slashes when file is encoded with CRLF instead of LF.
+ * Type System: Fix arrays of recursive structs.
+ * Yul Optimizer: Fix reordering bug in connection with shifted one and mul/div-instructions in for loop conditions.
+
+
+### 0.5.11 (2019-08-12)
+
+
+Language Features:
+ * Inline Assembly: Support direct constants of value type in inline assembly.
+
+Compiler Features:
+ * ABI: Additional internal type info in the field ``internalType``.
+ * eWasm: Highly experimental eWasm output using ``--ewasm`` in the commandline interface or output selection of ``ewasm.wast`` in standard-json.
+ * Metadata: Update the swarm hash to the current specification, changes ``bzzr0`` to ``bzzr1`` and urls to use ``bzz-raw://``.
+ * Standard JSON Interface: Compile only selected sources and contracts.
+ * Standard JSON Interface: Provide secondary error locations (e.g. the source position of other conflicting declarations).
+ * SMTChecker: Do not erase knowledge about storage pointers if another storage pointer is assigned.
+ * SMTChecker: Support string literal type.
+ * SMTChecker: New Horn-based algorithm that proves assertions via multi-transaction contract invariants.
+ * Standard JSON Interface: Provide AST even on errors if ``--error-recovery`` commandline switch or StandardCompiler `settings.parserErrorRecovery` is true.
+ * Yul Optimizer: Do not inline function if it would result in expressions being duplicated that are not cheap.
+
+
+Bugfixes:
+ * ABI decoder: Ensure that decoded arrays always point to distinct memory locations.
+ * Code Generator: Treat dynamically encoded but statically sized arrays and structs in calldata properly.
+ * SMTChecker: Fix internal error when inlining functions that contain tuple expressions.
+ * SMTChecker: Fix pointer knowledge erasing in loops.
+ * SMTChecker: Fix internal error when using compound bitwise assignment operators inside branches.
+ * SMTChecker: Fix internal error when inlining a function that returns a tuple containing an unsupported type inside a branch.
+ * SMTChecker: Fix internal error when inlining functions that use state variables and belong to a different source.
+ * SMTChecker: Fix internal error when reporting counterexamples concerning state variables from different source files.
+ * SMTChecker: Fix SMT sort mismatch when using string literals.
+ * View/Pure Checker: Properly detect state variable access through base class.
+ * Yul Analyzer: Check availability of data objects already in analysis phase.
+ * Yul Optimizer: Fix an issue where memory-accessing code was removed even though ``msize`` was used in the program.
+
+
+### 0.5.10 (2019-06-25)
+
+Important Bugfixes:
+ * ABIEncoderV2: Fix incorrect abi encoding of storage array of data type that occupy multiple storage slots
+ * Code Generator: Properly zero out higher order bits in elements of an array of negative numbers when assigning to storage and converting the type at the same time.
+
+
+Compiler Features:
+ * Commandline Interface: Experimental parser error recovery via the ``--error-recovery`` commandline switch or StandardCompiler `settings.parserErrorRecovery` boolean.
+ * Optimizer: Add rule to simplify ``SUB(~0, X)`` to ``NOT(X)``.
+ * Yul Optimizer: Make the optimizer work for all dialects of Yul including eWasm.
+
+
+Bugfixes:
+ * Type Checker: Set state mutability of the function type members ``gas`` and ``value`` to pure (while their return type inherits state mutability from the function type).
+ * Yul / Inline Assembly Parser: Disallow trailing commas in function call arguments.
+
+
+Build System:
+ * Attempt to use stock Z3 cmake files to find Z3 and only fall back to manual discovery.
+ * CMake: use imported targets for boost.
+ * Emscripten build: upgrade to boost 1.70.
+ * Generate a cmake error for gcc versions older than 5.0.
+
+
+
+### 0.5.9 (2019-05-28)
+
+Language Features:
+ * Inline Assembly: Revert change introduced in 0.5.7: The ``callvalue()`` instruction does not require ``payable`` anymore.
+ * Static Analyzer: Disallow libraries calling themselves externally.
+
+
+Compiler Features:
+ * Assembler: Encode the compiler version in the deployed bytecode.
+ * Code Generator: Fix handling of structs of dynamic size as constructor parameters.
+ * Inline Assembly: Disallow the combination of ``msize()`` and the Yul optimizer.
+ * Metadata: Add IPFS hashes of source files.
+ * Optimizer: Add rule to simplify SHL/SHR combinations.
+ * Optimizer: Add rules for multiplication and division by left-shifted one.
+ * SMTChecker: Support inherited state variables.
+ * SMTChecker: Support tuples and function calls with multiple return values.
+ * SMTChecker: Support ``delete``.
+ * SMTChecker: Inline external function calls to ``this``.
+ * Yul Optimizer: Simplify single-run ``for`` loops to ``if`` statements.
+ * Yul Optimizer: Optimize representation of numbers.
+ * Yul Optimizer: Do not inline recursive functions.
+ * Yul Optimizer: Do not remove instructions that affect ``msize()`` if ``msize()`` is used.
+
+Bugfixes:
+ * Code Generator: Explicitly turn uninitialized internal function pointers into invalid functions when loaded from storage.
+ * Code Generator: Fix assertion failure when assigning structs containing array of mapping.
+ * Compiler Internals: Reset the Yul string repository before each compilation, freeing up memory.
+ * SMTChecker: Fix bad cast in base constructor modifier.
+ * SMTChecker: Fix internal error when visiting state variable inherited from base class.
+ * SMTChecker: Fix internal error in fixed point operations.
+ * SMTChecker: Fix internal error in assignment to unsupported type.
+ * SMTChecker: Fix internal error in branching when inlining function calls that modify local variables.
+
+
+### 0.5.8 (2019-04-30)
+
+Important Bugfixes:
+ * Code Generator: Fix initialization routine of uninitialized internal function pointers in constructor context.
+ * Yul Optimizer: Fix SSA transform for multi-assignments.
+
+
+Language Features:
+ * ABIEncoderV2: Implement encoding of calldata arrays and structs.
+ * Code Generation: Implement copying recursive structs from storage to memory.
+ * Yul: Disallow function definitions inside for-loop init blocks.
+
+
+Compiler Features:
+ * ABI Decoder: Raise a runtime error on dirty inputs when using the experimental decoder.
+ * Optimizer: Add rule for shifts by constants larger than 255 for Constantinople.
+ * Optimizer: Add rule to simplify certain ANDs and SHL combinations
+ * SMTChecker: Support arithmetic compound assignment operators.
+ * SMTChecker: Support unary increment and decrement for array and mapping access.
+ * SMTChecker: Show unsupported warning for inline assembly blocks.
+ * SMTChecker: Support mod.
+ * SMTChecker: Support ``contract`` type.
+ * SMTChecker: Support ``this`` as address.
+ * SMTChecker: Support address members.
+ * Standard JSON Interface: Metadata settings now re-produce the original ``"useLiteralContent"`` setting from the compilation input.
+ * Yul: Adds break and continue keywords to for-loop syntax.
+ * Yul: Support ``.`` as part of identifiers.
+ * Yul Optimizer: Adds steps for detecting and removing of dead code.
+ * Yul Code Generator: Directly jump over a series of function definitions (instead of jumping over each one)
+
+
+Bugfixes:
+ * SMTChecker: Implement Boolean short-circuiting.
+ * SMTChecker: SSA control-flow did not take into account state variables that were modified inside inlined functions that were called inside branches.
+ * Type System: Use correct type name for contracts in event parameters when used in libraries. This affected code generation.
+ * Type System: Allow direct call to base class functions that have overloads.
+ * Type System: Warn about shadowing builtin variables if user variables are named ``this`` or ``super``.
+ * Yul: Properly register functions and disallow shadowing between function variables and variables in the outside scope.
+
+
+Build System:
+ * Soltest: Add commandline option `--test` / `-t` to isoltest which takes a string that allows filtering unit tests.
+ * soltest.sh: allow environment variable ``SOLIDITY_BUILD_DIR`` to specify build folder and add ``--help`` usage.
+
+
+### 0.5.7 (2019-03-26)
+
+Important Bugfixes:
+ * ABIEncoderV2: Fix bugs related to loading short value types from storage when encoding an array or struct from storage.
+ * ABIEncoderV2: Fix buffer overflow problem when encoding packed array from storage.
+ * Optimizer: Fix wrong ordering of arguments in byte optimization rule for constants.
+
+
+Language Features:
+ * Function calls with named arguments now work with overloaded functions.
+
+
+Compiler Features:
+ * Inline Assembly: Issue error when using ``callvalue()`` inside nonpayable function (in the same way that ``msg.value`` already does).
+ * Standard JSON Interface: Support "Yul" as input language.
+ * SMTChecker: Show callstack together with model if applicable.
+ * SMTChecker: Support modifiers.
+ * Yul Optimizer: Enable stack allocation optimization by default if Yul optimizer is active (disable in ``yulDetails``).
+
+
+Bugfixes:
+ * Code Generator: Defensively pad memory for ``type(Contract).name`` to multiples of 32.
+ * Type System: Detect and disallow internal function pointers as parameters for public/external library functions, even when they are nested/wrapped in structs, arrays or other types.
+ * Yul Optimizer: Properly determine whether a variable can be eliminated during stack compression pass.
+ * Yul / Inline Assembly Parser: Disallow more than one case statement with the same label inside a switch based on the label's integer value.
+
+
+Build System:
+ * Install scripts: Fix boost repository URL for CentOS 6.
+ * Soltest: Fix hex string update in soltest.
+
+
+### 0.5.6 (2019-03-13)
+
+Important Bugfixes:
+ * Yul Optimizer: Fix visitation order bug for the structural simplifier.
+ * Optimizer: Fix overflow in optimization rule that simplifies double shift by constant.
+
+Language Features:
+ * Allow calldata arrays with dynamically encoded base types with ABIEncoderV2.
+ * Allow dynamically encoded calldata structs with ABIEncoderV2.
+
+
+Compiler Features:
+ * Optimizer: Add rules for ``lt``-comparisons with constants.
+ * Peephole Optimizer: Remove double ``iszero`` before ``jumpi``.
+ * SMTChecker: Support enums without typecast.
+ * SMTChecker: Support one-dimensional arrays.
+ * Type Checker: Provide better error messages for some literal conversions.
+ * Yul Optimizer: Add rule to remove empty default switch cases.
+ * Yul Optimizer: Add rule to remove empty cases if no default exists.
+ * Yul Optimizer: Add rule to replace a switch with no cases with ``pop(expression)``.
+
+
+Bugfixes:
+ * JSON ABI: Json description of library ABIs no longer contains functions with internal types like storage structs.
+ * SMTChecker: Fix internal compiler error when contract contains too large rational number.
+ * Type system: Detect if a contract's base uses types that require the experimental abi encoder while the contract still uses the old encoder.
+
+
+Build System:
+ * Soltest: Add support for arrays in function signatures.
+ * Soltest: Add support for struct arrays in function signatures.
+ * Soltest: Add support for left-aligned, unpadded hex string literals.
+
+### 0.5.5 (2019-03-05)
+
+Language Features:
+ * Add support for getters of mappings with ``string`` or ``bytes`` key types.
+ * Meta programming: Provide access to the name of contracts via ``type(C).name``.
+
+
+Compiler Features:
+ * Support ``petersburg`` as ``evmVersion`` and set as default.
+ * Commandline Interface: Option to activate the experimental yul optimizer using ``-optimize-yul``.
+ * Inline Assembly: Consider ``extcodehash`` as part of Constantinople.
+ * Inline Assembly: Instructions unavailable to the currently configured EVM are errors now.
+ * SMTChecker: Do not report underflow/overflow if they always revert. This removes false positives when using ``SafeMath``.
+ * Standard JSON Interface: Allow retrieving metadata without triggering bytecode generation.
+ * Standard JSON Interface: Provide fine-grained control over the optimizer via the settings.
+ * Static Analyzer: Warn about expressions with custom types when they have no effect.
+ * Optimizer: Add new rules with constants including ``LT``, ``GT``, ``AND`` and ``BYTE``.
+ * Optimizer: Add rule for shifts with constants for Constantinople.
+ * Optimizer: Combine multiple shifts with constant shift-by values into one.
+ * Optimizer: Do not mask with 160-bits after ``CREATE`` and ``CREATE2`` as they are guaranteed to return an address or 0.
+ * Optimizer: Support shifts in the constant optimiser for Constantinople.
+ * Yul Optimizer: Add rule to replace switch statements with literals by matching case body.
+
+
+Bugfixes:
+ * ABIEncoderV2: Fix internal error related to bare delegatecall.
+ * ABIEncoderV2: Fix internal error related to ecrecover.
+ * ABIEncoderV2: Fix internal error related to mappings as library parameters.
+ * ABIEncoderV2: Fix invalid signature for events containing structs emitted in libraries.
+ * Inline Assembly: Proper error message for missing variables.
+ * Optimizer: Fix internal error related to unused tag removal across assemblies. This never generated any invalid code.
+ * SMTChecker: Fix crash related to statically-sized arrays.
+ * TypeChecker: Fix internal error and disallow index access on contracts and libraries.
+ * Yul: Properly detect name clashes with functions before their declaration.
+ * Yul: Take built-in functions into account in the compilability checker.
+ * Yul Optimizer: Properly take reassignments to variables in sub-expressions into account when replacing in the ExpressionSimplifier.
+
+
+Build System:
+ * Soltest: Add support for left-aligned, padded hex literals.
+ * Soltest: Add support for right-aligned, padded boolean literals.
+
+### 0.5.4 (2019-02-12)
+
+Language Features:
+ * Allow calldata structs without dynamically encoded members with ABIEncoderV2.
+
+
+Compiler Features:
+ * ABIEncoderV2: Implement packed encoding.
+ * C API (``libsolc`` / raw ``soljson.js``): Introduce ``solidity_free`` method which releases all internal buffers to save memory.
+ * Commandline Interface: Adds new option ``--new-reporter`` for improved diagnostics formatting
+   along with ``--color`` and ``--no-color`` for colorized output to be forced (or explicitly disabled).
+
+
+Bugfixes:
+ * Code Generator: Defensively pad allocation of creationCode and runtimeCode to multiples of 32 bytes.
+ * Commandline Interface: Allow yul optimizer only for strict assembly.
+ * Parser: Disallow empty import statements.
+ * Type Checker: Disallow mappings with data locations other than ``storage``.
+ * Type Checker: Fix internal error when a struct array index does not fit into a uint256.
+ * Type System: Properly report packed encoded size for arrays and structs (mostly unused until now).
+
+
+Build System:
+ * Add support for continuous fuzzing via Google oss-fuzz
+ * SMT: If using Z3, require version 4.6.0 or newer.
+ * Soltest: Add parser that is used in the file-based unit test environment.
+ * Ubuntu PPA Packages: Use CVC4 as SMT solver instead of Z3
+
+
+### 0.5.3 (2019-01-22)
+
+Language Features:
+ * Provide access to creation and runtime code of contracts via ``type(C).creationCode`` / ``type(C).runtimeCode``.
+
+
+Compiler Features:
+ * Control Flow Graph: Warn about unreachable code.
+ * SMTChecker: Support basic typecasts without truncation.
+ * SMTChecker: Support external function calls and erase all knowledge regarding storage variables and references.
+
+
+Bugfixes:
+ * Emscripten: Split simplification rule initialization up further to work around issues with soljson.js in some browsers.
+ * Type Checker: Disallow calldata structs until implemented.
+ * Type Checker: Return type error if fixed point encoding is attempted instead of throwing ``UnimplementedFeatureError``.
+ * Yul: Check that arguments to ``dataoffset`` and ``datasize`` are literals at parse time and properly take this into account in the optimizer.
+ * Yul: Parse number literals for detecting duplicate switch cases.
+ * Yul: Require switch cases to have the same type.
+
+
+Build System:
+ * Emscripten: Upgrade to emscripten 1.38.8 on travis and circleci.
+
+
+### 0.5.2 (2018-12-19)
+
+Language Features:
+ * Control Flow Graph: Detect every access to uninitialized storage pointers.
+
+
+Compiler Features:
+ * Inline Assembly: Improve error messages around invalid function argument count.
+ * Code Generator: Only check callvalue once if all functions are non-payable.
+ * Code Generator: Use codecopy for string constants more aggressively.
+ * Code Generator: Use binary search for dispatch function if more efficient. The size/speed tradeoff can be tuned using ``--optimize-runs``.
+ * SMTChecker: Support mathematical and cryptographic functions in an uninterpreted way.
+ * SMTChecker: Support one-dimensional mappings.
+ * Standard JSON Interface: Disallow unknown keys in standard JSON input.
+ * Standard JSON Interface: Only run code generation if it has been requested. This could lead to unsupported feature errors only being reported at the point where you request bytecode.
+ * Static Analyzer: Do not warn about unused variables or state mutability for functions with an empty body.
+ * Type Checker: Add an additional reason to be displayed when type conversion fails.
+ * Yul: Support object access via ``datasize``, ``dataoffset`` and ``datacopy`` in standalone assembly mode.
+
+
+Bugfixes:
+ * Standard JSON Interface: Report specific error message for json input errors instead of internal compiler error.
+
+
+Build System:
+ * Replace the trusty PPA build by a static build on cosmic that is used for the trusty package instead.
+ * Remove support for Visual Studio 2015.
+
+
+### 0.5.1 (2018-12-03)
+
+Language Features:
+ * Allow mapping type for parameters and return variables of public and external library functions.
+ * Allow public functions to override external functions.
+
+Compiler Features:
+ * Code generator: Do not perform redundant double cleanup on unsigned integers when loading from calldata.
+ * Commandline interface: Experimental ``--optimize`` option for assembly mode (``--strict-assembly`` and ``--yul``).
+ * SMTChecker: SMTLib2 queries and responses passed via standard JSON compiler interface.
+ * SMTChecker: Support ``msg``, ``tx`` and ``block`` member variables.
+ * SMTChecker: Support ``gasleft()`` and ``blockhash()`` functions.
+ * SMTChecker: Support internal bound function calls.
+ * Yul: Support Yul objects in ``--assemble``, ``--strict-assembly`` and ``--yul`` commandline options.
+
+Bugfixes:
+ * Assembly output: Do not mix in/out jump annotations with arguments.
+ * Commandline interface: Fix crash when using ``--ast`` on empty runtime code.
+ * Code Generator: Annotate jump from calldata decoder to function as "jump in".
+ * Code Generator: Fix internal error related to state variables of function type access via base contract name.
+ * Optimizer: Fix nondeterminism bug related to the boost version and constants representation. The bug only resulted in less optimal but still correct code because the generated routine is always verified to be correct.
+ * Type Checker: Properly detect different return types when overriding an external interface function with a public contract function.
+ * Type Checker: Disallow struct return types for getters of public state variables unless the new ABI encoder is active.
+ * Type Checker: Fix internal compiler error when a field of a struct used as a parameter in a function type has a non-existent type.
+ * Type Checker: Disallow functions ``sha3`` and ``suicide`` also without a function call.
+ * Type Checker: Fix internal compiler error with ``super`` when base contract function is not implemented.
+ * Type Checker: Fixed internal error when trying to create abstract contract in some cases.
+ * Type Checker: Fixed internal error related to double declaration of events.
+ * Type Checker: Disallow inline arrays of mapping type.
+ * Type Checker: Consider abstract function to be implemented by public state variable.
+
+Build System:
+ * CMake: LLL is not built anymore by default. Must configure it with CMake as `-DLLL=ON`.
+ * Docker: Includes both Scratch and Alpine images.
+ * Emscripten: Upgrade to Emscripten SDK 1.37.21 and boost 1.67.
+
+Solc-Js:
+ * Fix handling of standard-json in the commandline executable.
+ * Remove support of nodejs 4.
+
+
+### 0.5.0 (2018-11-13)
+
+How to update your code:
+ * Change every ``.call()`` to a ``.call("")`` and every ``.call(signature, a, b, c)`` to use ``.call(abi.encodeWithSignature(signature, a, b, c))`` (the last one only works for value types).
+ * Change every ``keccak256(a, b, c)`` to ``keccak256(abi.encodePacked(a, b, c))``.
+ * Add ``public`` to every function and ``external`` to every fallback or interface function that does not specify its visibility already.
+ * Make your fallback functions ``external``.
+ * Explicitly state the data location for all variables of struct, array or mapping types (including function parameters), e.g. change ``uint[] x = m_x`` to ``uint[] storage x = m_x``. Note that ``external`` functions require parameters with a data location of ``calldata``.
+ * Explicitly convert values of contract type to addresses before using an ``address`` member. Example: if ``c`` is a contract, change ``c.transfer(...)`` to ``address(c).transfer(...)``.
+ * Declare variables and especially function arguments as ``address payable``, if you want to call ``transfer`` on them.
+
+Breaking Changes:
+ * ABI Encoder: Properly pad data from calldata (``msg.data`` and external function parameters). Use ``abi.encodePacked`` for unpadded encoding.
+ * C API (``libsolc`` / raw ``soljson.js``): Removed the ``version``, ``license``, ``compileSingle``, ``compileJSON``, ``compileJSONCallback`` methods
+   and replaced them with the ``solidity_license``, ``solidity_version`` and ``solidity_compile`` methods.
+ * Code Generator: Signed right shift uses proper arithmetic shift, i.e. rounding towards negative infinity. Warning: this may silently change the semantics of existing code!
+ * Code Generator: Revert at runtime if calldata is too short or points out of bounds. This is done inside the ``ABI decoder`` and therefore also applies to ``abi.decode()``.
+ * Code Generator: Use ``STATICCALL`` for ``pure`` and ``view`` functions. This was already the case in the experimental 0.5.0 mode.
+ * Commandline interface: Remove obsolete ``--formal`` option.
+ * Commandline interface: Rename the ``--julia`` option to ``--yul``.
+ * Commandline interface: Require ``-`` if standard input is used as source.
+ * Commandline interface: Use hash of library name for link placeholder instead of name itself.
+ * Compiler interface: Disallow remappings with empty prefix.
+ * Control Flow Analyzer: Consider mappings as well when checking for uninitialized return values.
+ * Control Flow Analyzer: Turn warning about returning uninitialized storage pointers into an error.
+ * General: ``continue`` in a ``do...while`` loop jumps to the condition (it used to jump to the loop body). Warning: this may silently change the semantics of existing code.
+ * General: Disallow declaring empty structs.
+ * General: Disallow raw ``callcode`` (was already deprecated in 0.4.12). It is still possible to use it via inline assembly.
+ * General: Disallow ``var`` keyword.
+ * General: Disallow ``sha3`` and ``suicide`` aliases.
+ * General: Disallow the ``throw`` statement. This was already the case in the experimental 0.5.0 mode.
+ * General: Disallow the ``years`` unit denomination (was already deprecated in 0.4.24)
+ * General: Introduce ``emit`` as a keyword instead of parsing it as identifier.
+ * General: New keywords: ``calldata`` and ``constructor``
+ * General: New reserved keywords: ``alias``, ``apply``, ``auto``, ``copyof``, ``define``, ``immutable``,
+   ``implements``, ``macro``, ``mutable``, ``override``, ``partial``, ``promise``, ``reference``, ``sealed``,
+   ``sizeof``, ``supports``, ``typedef`` and ``unchecked``.
+ * General: Remove assembly instruction aliases ``sha3`` and ``suicide``
+ * General: C99-style scoping rules are enforced now. This was already the case in the experimental 0.5.0 mode.
+ * General: Disallow combining hex numbers with unit denominations (e.g. ``0x1e lu``). This was already the case in the experimental 0.5.0 mode.
+ * JSON AST: Remove ``constant`` and ``payable`` fields (the information is encoded in the ``stateMutability`` field).
+ * JSON AST: Replace the ``isConstructor`` field by a new ``kind`` field, which can be ``constructor``, ``fallback`` or ``function``.
+ * Interface: Remove "clone contract" feature. The ``--clone-bin`` and ``--combined-json clone-bin`` commandline options are not available anymore.
+ * Name Resolver: Do not exclude public state variables when looking for conflicting declarations.
+ * Optimizer: Remove the no-op ``PUSH1 0 NOT AND`` sequence.
+ * Parser: Disallow trailing dots that are not followed by a number.
+ * Parser: Remove ``constant`` as function state mutability modifier.
+ * Parser: Disallow uppercase X in hex number literals
+ * Type Checker: Disallow assignments between tuples with different numbers of components. This was already the case in the experimental 0.5.0 mode.
+ * Type Checker: Disallow values for constants that are not compile-time constants. This was already the case in the experimental 0.5.0 mode.
+ * Type Checker: Disallow arithmetic operations for boolean variables.
+ * Type Checker: Disallow tight packing of literals. This was already the case in the experimental 0.5.0 mode.
+ * Type Checker: Disallow calling base constructors without parentheses. This was already the case in the experimental 0.5.0 mode.
+ * Type Checker: Disallow conversions between ``bytesX`` and ``uintY`` of different size.
+ * Type Checker: Disallow conversions between unrelated contract types. Explicit conversion via ``address`` can still achieve it.
+ * Type Checker: Disallow empty return statements for functions with one or more return values.
+ * Type Checker: Disallow empty tuple components. This was partly already the case in the experimental 0.5.0 mode.
+ * Type Checker: Disallow multi-variable declarations with mismatching number of values. This was already the case in the experimental 0.5.0 mode.
+ * Type Checker: Disallow specifying base constructor arguments multiple times in the same inheritance hierarchy. This was already the case in the experimental 0.5.0 mode.
+ * Type Checker: Disallow calling constructor with wrong argument count. This was already the case in the experimental 0.5.0 mode.
+ * Type Checker: Disallow uninitialized storage variables. This was already the case in the experimental 0.5.0 mode.
+ * Type Checker: Detecting cyclic dependencies in variables and structs is limited in recursion to 256.
+ * Type Checker: Require explicit data location for all variables, including function parameters. This was partly already the case in the experimental 0.5.0 mode.
+ * Type Checker: Only accept a single ``bytes`` type for ``.call()`` (and family), ``keccak256()``, ``sha256()`` and ``ripemd160()``.
+ * Type Checker: Fallback function must be external. This was already the case in the experimental 0.5.0 mode.
+ * Type Checker: Interface functions must be declared external. This was already the case in the experimental 0.5.0 mode.
+ * Type Checker: Address members are not included in contract types anymore. An explicit conversion is now required before invoking an ``address`` member from a contract.
+ * Type Checker: Disallow "loose assembly" syntax entirely. This means that jump labels, jumps and non-functional instructions cannot be used anymore.
+ * Type System: Disallow explicit and implicit conversions from decimal literals to ``bytesXX`` types.
+ * Type System: Disallow explicit and implicit conversions from hex literals to ``bytesXX`` types of different size.
+ * Type System: Distinguish between payable and non-payable address types.
+ * View Pure Checker: Disallow ``msg.value`` in (or introducing it via a modifier to) a non-payable function.
+ * Remove obsolete ``std`` directory from the Solidity repository. This means accessing ``https://github.com/ethereum/solidity/blob/develop/std/*.sol`` (or ``https://github.com/ethereum/solidity/std/*.sol`` in Remix) will not be possible.
+ * References Resolver: Turn missing storage locations into an error. This was already the case in the experimental 0.5.0 mode.
+ * Syntax Checker: Disallow functions without implementation to use modifiers. This was already the case in the experimental 0.5.0 mode.
+ * Syntax Checker: Named return values in function types are an error.
+ * Syntax Checker: Strictly require visibility specifier for functions. This was already the case in the experimental 0.5.0 mode.
+ * Syntax Checker: Disallow unary ``+``. This was already the case in the experimental 0.5.0 mode.
+ * Syntax Checker: Disallow single statement variable declaration inside if/while/for bodies that are not blocks.
+ * View Pure Checker: Strictly enforce state mutability. This was already the case in the experimental 0.5.0 mode.
+
+Language Features:
+ * General: Add ``staticcall`` to ``address``.
+ * General: Allow appending ``calldata`` keyword to types, to explicitly specify data location for arguments of external functions.
+ * General: Support ``pop()`` for storage arrays.
+ * General: Scoping rules now follow the C99-style.
+ * General: Allow ``enum``s in interfaces.
+ * General: Allow ``mapping`` storage pointers as arguments and return values in all internal functions.
+ * General: Allow ``struct``s in interfaces.
+ * General: Provide access to the ABI decoder through ``abi.decode(bytes memory data, (...))``.
+ * General: Disallow zero length for fixed-size arrays.
+ * Parser: Accept the ``address payable`` type during parsing.
+
+Compiler Features:
+ * Build System: Support for Mojave version of macOS added.
+ * Code Generator: ``CREATE2`` instruction has been updated to match EIP1014 (aka "Skinny CREATE2"). It also is accepted as part of Constantinople.
+ * Code Generator: ``EXTCODEHASH`` instruction has been added based on EIP1052.
+ * Type Checker: Nicer error message when trying to reference overloaded identifiers in inline assembly.
+ * Type Checker: Show named argument in case of error.
+ * Type System: IntegerType is split into IntegerType and AddressType internally.
+ * Tests: Determine transaction status during IPC calls.
+ * Code Generator: Allocate and free local variables according to their scope.
+ * Removed ``pragma experimental "v0.5.0";``.
+ * Syntax Checker: Improved error message for lookup in function types.
+ * Name Resolver: Updated name suggestion look up function to take into account length of the identifier: 1: no search, 2-3: at most one change, 4-: at most two changes
+ * SMTChecker: Support calls to internal functions that return none or a single value.
+
+Bugfixes:
+ * Build System: Support versions of CVC4 linked against CLN instead of GMP. In case of compilation issues due to the experimental SMT solver support, the solvers can be disabled when configuring the project with CMake using ``-DUSE_CVC4=OFF`` or ``-DUSE_Z3=OFF``.
+ * Tests: Fix chain parameters to make ipc tests work with newer versions of cpp-ethereum.
+ * Code Generator: Fix allocation of byte arrays (zeroed out too much memory).
+ * Code Generator: Properly handle negative number literals in ABIEncoderV2.
+ * Code Generator: Do not crash on using a length of zero for multidimensional fixed-size arrays.
+ * Commandline Interface: Correctly handle paths with backslashes on windows.
+ * Control Flow Analyzer: Ignore unimplemented functions when detecting uninitialized storage pointer returns.
+ * Fix NatSpec json output for `@notice` and `@dev` tags on contract definitions.
+ * Optimizer: Correctly estimate gas costs of constants for special cases.
+ * Optimizer: Fix simplification rule initialization bug that appeared on some emscripten platforms.
+ * References Resolver: Do not crash on using ``_slot`` and ``_offset`` suffixes on their own.
+ * References Resolver: Enforce ``storage`` as data location for mappings.
+ * References Resolver: Properly handle invalid references used together with ``_slot`` and ``_offset``.
+ * References Resolver: Report error instead of assertion fail when FunctionType has an undeclared type as parameter.
+ * References Resolver: Fix high CPU usage when using large variable names issue. Only suggest similar name if identifiers shorter than 80 characters.
+ * Type Checker: Default data location for type conversions (e.g. from literals) is memory and not storage.
+ * Type Checker: Disallow assignments to mappings within tuple assignments as well.
+ * Type Checker: Disallow packed encoding of arrays of structs.
+ * Type Checker: Allow assignments to local variables of mapping types.
+ * Type Checker: Consider fixed size arrays when checking for recursive structs.
+ * Type Checker: Fix crashes in erroneous tuple assignments in which the type of the right hand side cannot be determined.
+ * Type Checker: Fix freeze for negative fixed-point literals very close to ``0``, such as ``-1e-100``.
+ * Type Checker: Dynamic types as key for public mappings return error instead of assertion fail.
+ * Type Checker: Fix internal error when array index value is too large.
+ * Type Checker: Fix internal error when fixed-size array is too large to be encoded.
+ * Type Checker: Fix internal error for array type conversions.
+ * Type Checker: Fix internal error when array index is not an unsigned.
+ * Type System: Allow arbitrary exponents for literals with a mantissa of zero.
+ * Parser: Fix incorrect source location for nameless parameters.
+ * Command Line Interface: Fix internal error when compiling stdin with no content and --ast option.
+
+
 ### 0.4.26 (2020-01-16)
 
 YOUChain Features:
@@ -11,6 +615,8 @@ Important Bugfixes:
 Bugfixes:
  * ABIEncoderV2: Refuse to generate code that is known to be potentially buggy.
  * General: Split rule list such that JavaScript environments with small stacks can use the compiler.
+
+Note: The above changes are not included in 0.5.0, because they were backported.
 
 
 ### 0.4.25 (2018-09-12)

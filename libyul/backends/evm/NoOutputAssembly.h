@@ -49,7 +49,8 @@ public:
 
 	void setSourceLocation(langutil::SourceLocation const&) override {}
 	int stackHeight() const override { return m_stackHeight; }
-	void appendInstruction(dev::solidity::Instruction _instruction) override;
+	void setStackHeight(int height) override { m_stackHeight = height; }
+	void appendInstruction(dev::eth::Instruction _instruction) override;
 	void appendConstant(dev::u256 const& _constant) override;
 	void appendLabel(LabelID _labelId) override;
 	void appendLabelReference(LabelID _labelId) override;
@@ -81,7 +82,7 @@ private:
  */
 struct NoOutputEVMDialect: public EVMDialect
 {
-	explicit NoOutputEVMDialect(std::shared_ptr<EVMDialect> const& _copyFrom);
+	explicit NoOutputEVMDialect(EVMDialect const& _copyFrom);
 };
 
 

@@ -26,8 +26,17 @@
 #include <libevmasm/ExpressionClasses.h>
 #include <libevmasm/SimplificationRule.h>
 
+#include <libdevcore/CommonData.h>
+
+#include <boost/noncopyable.hpp>
+
 #include <functional>
 #include <vector>
+
+namespace langutil
+{
+struct SourceLocation;
+}
 
 namespace dev
 {
@@ -53,6 +62,10 @@ public:
 		ExpressionClasses const& _classes
 	);
 
+	/// Checks whether the rulelist is non-empty. This is usually enforced
+	/// by the constructor, but we had some issues with static initialization.
+	bool isInitialized() const;
+
 private:
 	void addRules(std::vector<SimplificationRule<Pattern>> const& _rules);
 	void addRule(SimplificationRule<Pattern> const& _rule);
@@ -76,14 +89,20 @@ public:
 	using Expression = ExpressionClasses::Expression;
 	using Id = ExpressionClasses::Id;
 
+	using Builtins = dev::eth::EVMBuiltins<Pattern>;
+	static constexpr size_t WordSize = 256;
+	using Word = u256;
+
 	// Matches a specific constant value.
 	Pattern(unsigned _value): Pattern(u256(_value)) {}
+	Pattern(int _value): Pattern(u256(_value)) {}
+	Pattern(long unsigned _value): Pattern(u256(_value)) {}
 	// Matches a specific constant value.
 	Pattern(u256 const& _value): m_type(Push), m_requireDataMatch(true), m_data(std::make_shared<u256>(_value)) {}
 	// Matches a specific assembly item type or anything if not given.
 	Pattern(AssemblyItemType _type = UndefinedItem): m_type(_type) {}
 	// Matches a given instruction with given arguments
-	Pattern(Instruction _instruction, std::vector<Pattern> const& _arguments = {});
+	Pattern(Instruction _instruction, std::initializer_list<Pattern> _arguments = {});
 	/// Sets this pattern to be part of the match group with the identifier @a _group.
 	/// Inside one rule, all patterns in the same match group have to match expressions from the
 	/// same expression equivalence class.
@@ -91,7 +110,7 @@ public:
 	unsigned matchGroup() const { return m_matchGroup; }
 	bool matches(Expression const& _expr, ExpressionClasses const& _classes) const;
 
-	AssemblyItem toAssemblyItem(SourceLocation const& _location) const;
+	AssemblyItem toAssemblyItem(langutil::SourceLocation const& _location) const;
 	std::vector<Pattern> arguments() const { return m_arguments; }
 
 	/// @returns the id of the matched expression if this pattern is part of a match group.
@@ -129,7 +148,7 @@ struct ExpressionTemplate
 {
 	using Expression = ExpressionClasses::Expression;
 	using Id = ExpressionClasses::Id;
-	explicit ExpressionTemplate(Pattern const& _pattern, SourceLocation const& _location);
+	explicit ExpressionTemplate(Pattern const& _pattern, langutil::SourceLocation const& _location);
 	std::string toString() const;
 	bool hasId = false;
 	/// Id of the matched expression, if available.

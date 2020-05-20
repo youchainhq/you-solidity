@@ -1,18 +1,18 @@
 /*
-    This file is part of solidity.
+	This file is part of solidity.
 
-    solidity is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	solidity is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    solidity is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	solidity is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with solidity.  If not, see <http://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with solidity.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
  * @author Christian <c@ethdev.com>
@@ -21,13 +21,13 @@
  */
 
 #include <libsolidity/ast/ASTPrinter.h>
-#include <libsolidity/ast/AST.h>
 
+#include <libsolidity/ast/AST.h>
+#include <boost/algorithm/string/join.hpp>
 #include <json/json.h>
 
-#include <boost/algorithm/string/join.hpp>
-
 using namespace std;
+using namespace langutil;
 
 namespace dev
 {
@@ -113,9 +113,13 @@ bool ASTPrinter::visit(ParameterList const& _node)
 
 bool ASTPrinter::visit(FunctionDefinition const& _node)
 {
-	writeLine("FunctionDefinition \"" + _node.name() + "\"" +
-			  (_node.isPublic() ? " - public" : "") +
-			  (_node.stateMutability() == StateMutability::View ? " - const" : ""));
+	writeLine(
+		"FunctionDefinition \"" +
+		_node.name() +
+		"\"" +
+		(_node.isPublic() ? " - public" : "") +
+		(_node.stateMutability() == StateMutability::View ? " - const" : "")
+	);
 	printSourcePart(_node);
 	return goDeeper();
 }
@@ -289,7 +293,7 @@ bool ASTPrinter::visit(Conditional const& _node)
 
 bool ASTPrinter::visit(Assignment const& _node)
 {
-	writeLine(string("Assignment using operator ") + Token::toString(_node.assignmentOperator()));
+	writeLine(string("Assignment using operator ") + TokenTraits::toString(_node.assignmentOperator()));
 	printType(_node);
 	printSourcePart(_node);
 	return goDeeper();
@@ -305,8 +309,12 @@ bool ASTPrinter::visit(TupleExpression const& _node)
 
 bool ASTPrinter::visit(UnaryOperation const& _node)
 {
-	writeLine(string("UnaryOperation (") + (_node.isPrefixOperation() ? "prefix" : "postfix") +
-			  ") " + Token::toString(_node.getOperator()));
+	writeLine(
+		string("UnaryOperation (") +
+		(_node.isPrefixOperation() ? "prefix" : "postfix") +
+		") " +
+		TokenTraits::toString(_node.getOperator())
+	);
 	printType(_node);
 	printSourcePart(_node);
 	return goDeeper();
@@ -314,7 +322,7 @@ bool ASTPrinter::visit(UnaryOperation const& _node)
 
 bool ASTPrinter::visit(BinaryOperation const& _node)
 {
-	writeLine(string("BinaryOperation using operator ") + Token::toString(_node.getOperator()));
+	writeLine(string("BinaryOperation using operator ") + TokenTraits::toString(_node.getOperator()));
 	printType(_node);
 	printSourcePart(_node);
 	return goDeeper();
@@ -370,7 +378,7 @@ bool ASTPrinter::visit(ElementaryTypeNameExpression const& _node)
 
 bool ASTPrinter::visit(Literal const& _node)
 {
-	char const* tokenString = Token::toString(_node.token());
+	char const* tokenString = TokenTraits::toString(_node.token());
 	if (!tokenString)
 		tokenString = "[no token]";
 	writeLine(string("Literal, token: ") + tokenString + " value: " + _node.value());

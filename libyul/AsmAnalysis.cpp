@@ -25,6 +25,8 @@
 #include <libyul/AsmScope.h>
 #include <libyul/AsmAnalysisInfo.h>
 #include <libyul/Utilities.h>
+#include <libyul/Exceptions.h>
+#include <libyul/Object.h>
 
 #include <liblangutil/ErrorReporter.h>
 
@@ -33,15 +35,16 @@
 
 #include <memory>
 #include <functional>
+#include <utility>
 
 using namespace std;
 using namespace dev;
 using namespace langutil;
 using namespace yul;
 using namespace dev;
-using namespace dev::solidity;
 
-namespace {
+namespace
+{
 
 set<string> const builtinTypes{"bool", "u8", "s8", "u32", "s32", "u64", "s64", "u128", "s128", "u256", "s256"};
 
@@ -49,42 +52,50 @@ set<string> const builtinTypes{"bool", "u8", "s8", "u32", "s32", "u64", "s64", "
 
 bool AsmAnalyzer::analyze(Block const& _block)
 {
-	if (!(ScopeFiller(m_info, m_errorReporter))(_block))
-		return false;
+	bool success = false;
+	try
+	{
+		if (!(ScopeFiller(m_info, m_errorReporter))(_block))
+			return false;
 
-	bool success = (*this)(_block);
-	if (!success)
-		solAssert(m_errorReporter.hasErrors(), "No success but no error.");
+		success = (*this)(_block);
+		if (!success)
+			yulAssert(m_errorReporter.hasErrors(), "No success but no error.");
+	}
+	catch (FatalError const&)
+	{
+		// This FatalError con occur if the errorReporter has too many errors.
+		yulAssert(!m_errorReporter.errors().empty(), "Fatal error detected, but no error is reported.");
+	}
 	return success && !m_errorReporter.hasErrors();
 }
 
-AsmAnalysisInfo AsmAnalyzer::analyzeStrictAssertCorrect(
-	shared_ptr<Dialect> _dialect,
-	Block const& _ast
-)
+AsmAnalysisInfo AsmAnalyzer::analyzeStrictAssertCorrect(Dialect const& _dialect, Object const& _object)
 {
 	ErrorList errorList;
 	langutil::ErrorReporter errors(errorList);
-	yul::AsmAnalysisInfo analysisInfo;
+	AsmAnalysisInfo analysisInfo;
 	bool success = yul::AsmAnalyzer(
 		analysisInfo,
 		errors,
 		Error::Type::SyntaxError,
-		_dialect
-	).analyze(_ast);
-	solAssert(success && errorList.empty(), "Invalid assembly/yul code.");
+		_dialect,
+		{},
+		_object.dataNames()
+	).analyze(*_object.code);
+	yulAssert(success && errorList.empty(), "Invalid assembly/yul code.");
 	return analysisInfo;
 }
 
 bool AsmAnalyzer::operator()(Label const& _label)
 {
-	solAssert(!_label.name.empty(), "");
+	yulAssert(!_label.name.empty(), "");
 	checkLooseFeature(
 		_label.location,
 		"The use of labels is disallowed. Please use \"if\", \"switch\", \"for\" or function calls instead."
 	);
 	m_info.stackHeightInfo[&_label] = m_stackHeight;
-	warnOnInstructions(solidity::Instruction::JUMPDEST, _label.location);
+	warnOnInstructions(dev::eth::Instruction::JUMPDEST, _label.location);
 	return true;
 }
 
@@ -123,8 +134,8 @@ bool AsmAnalyzer::operator()(Literal const& _literal)
 	}
 	else if (_literal.kind == LiteralKind::Boolean)
 	{
-		solAssert(m_dialect->flavour == AsmFlavour::Yul, "");
-		solAssert(_literal.value == "true"_yulstring || _literal.value == "false"_yulstring, "");
+		yulAssert(m_dialect.flavour == AsmFlavour::Yul, "");
+		yulAssert(_literal.value == "true"_yulstring || _literal.value == "false"_yulstring, "");
 	}
 	m_info.stackHeightInfo[&_literal] = m_stackHeight;
 	return true;
@@ -132,10 +143,10 @@ bool AsmAnalyzer::operator()(Literal const& _literal)
 
 bool AsmAnalyzer::operator()(Identifier const& _identifier)
 {
-	solAssert(!_identifier.name.empty(), "");
+	yulAssert(!_identifier.name.empty(), "");
 	size_t numErrorsBefore = m_errorReporter.errors().size();
 	bool success = true;
-	if (m_currentScope->lookup(_identifier.name, Scope::Visitor(
+	if (m_currentScope->lookup(_identifier.name, GenericVisitor{
 		[&](Scope::Variable const& _var)
 		{
 			if (!m_activeVariables.count(&_var))
@@ -160,7 +171,7 @@ bool AsmAnalyzer::operator()(Identifier const& _identifier)
 			);
 			success = false;
 		}
-	)))
+	}))
 	{
 	}
 	else
@@ -186,14 +197,14 @@ bool AsmAnalyzer::operator()(Identifier const& _identifier)
 
 bool AsmAnalyzer::operator()(FunctionalInstruction const& _instr)
 {
-	solAssert(m_dialect->flavour != AsmFlavour::Yul, "");
+	yulAssert(m_dialect.flavour != AsmFlavour::Yul, "");
 	bool success = true;
 	for (auto const& arg: _instr.arguments | boost::adaptors::reversed)
 		if (!expectExpression(arg))
 			success = false;
 	// Parser already checks that the number of arguments is correct.
 	auto const& info = instructionInfo(_instr.instruction);
-	solAssert(info.args == int(_instr.arguments.size()), "");
+	yulAssert(info.args == int(_instr.arguments.size()), "");
 	m_stackHeight += info.ret - info.args;
 	m_info.stackHeightInfo[&_instr] = m_stackHeight;
 	warnOnInstructions(_instr.instruction, _instr.location);
@@ -203,10 +214,10 @@ bool AsmAnalyzer::operator()(FunctionalInstruction const& _instr)
 bool AsmAnalyzer::operator()(ExpressionStatement const& _statement)
 {
 	int initialStackHeight = m_stackHeight;
-	bool success = boost::apply_visitor(*this, _statement.expression);
-	if (m_stackHeight != initialStackHeight && (m_dialect->flavour != AsmFlavour::Loose || m_errorTypeForLoose))
+	bool success = std::visit(*this, _statement.expression);
+	if (m_stackHeight != initialStackHeight && (m_dialect.flavour != AsmFlavour::Loose || m_errorTypeForLoose))
 	{
-		Error::Type errorType = m_dialect->flavour == AsmFlavour::Loose ? *m_errorTypeForLoose : Error::Type::TypeError;
+		Error::Type errorType = m_dialect.flavour == AsmFlavour::Loose ? *m_errorTypeForLoose : Error::Type::TypeError;
 		string msg =
 			"Top-level expressions are not supposed to return values (this expression returns " +
 			to_string(m_stackHeight - initialStackHeight) +
@@ -234,11 +245,11 @@ bool AsmAnalyzer::operator()(StackAssignment const& _assignment)
 
 bool AsmAnalyzer::operator()(Assignment const& _assignment)
 {
-	solAssert(_assignment.value, "");
+	yulAssert(_assignment.value, "");
 	int const expectedItems = _assignment.variableNames.size();
-	solAssert(expectedItems >= 1, "");
+	yulAssert(expectedItems >= 1, "");
 	int const stackHeight = m_stackHeight;
-	bool success = boost::apply_visitor(*this, *_assignment.value);
+	bool success = std::visit(*this, *_assignment.value);
 	if ((m_stackHeight - stackHeight) != expectedItems)
 	{
 		m_errorReporter.declarationError(
@@ -265,7 +276,7 @@ bool AsmAnalyzer::operator()(VariableDeclaration const& _varDecl)
 	if (_varDecl.value)
 	{
 		int const stackHeight = m_stackHeight;
-		success = boost::apply_visitor(*this, *_varDecl.value);
+		success = std::visit(*this, *_varDecl.value);
 		int numValues = m_stackHeight - stackHeight;
 		if (numValues != numVariables)
 		{
@@ -287,7 +298,7 @@ bool AsmAnalyzer::operator()(VariableDeclaration const& _varDecl)
 	for (auto const& variable: _varDecl.variables)
 	{
 		expectValidType(variable.type.str(), variable.location);
-		m_activeVariables.insert(&boost::get<Scope::Variable>(m_currentScope->identifiers.at(variable.name)));
+		m_activeVariables.insert(&std::get<Scope::Variable>(m_currentScope->identifiers.at(variable.name)));
 	}
 	m_info.stackHeightInfo[&_varDecl] = m_stackHeight;
 	return success;
@@ -295,14 +306,14 @@ bool AsmAnalyzer::operator()(VariableDeclaration const& _varDecl)
 
 bool AsmAnalyzer::operator()(FunctionDefinition const& _funDef)
 {
-	solAssert(!_funDef.name.empty(), "");
+	yulAssert(!_funDef.name.empty(), "");
 	Block const* virtualBlock = m_info.virtualBlocks.at(&_funDef).get();
-	solAssert(virtualBlock, "");
+	yulAssert(virtualBlock, "");
 	Scope& varScope = scope(virtualBlock);
 	for (auto const& var: _funDef.parameters + _funDef.returnVariables)
 	{
 		expectValidType(var.type.str(), var.location);
-		m_activeVariables.insert(&boost::get<Scope::Variable>(varScope.identifiers.at(var.name)));
+		m_activeVariables.insert(&std::get<Scope::Variable>(varScope.identifiers.at(var.name)));
 	}
 
 	int const stackHeight = m_stackHeight;
@@ -317,12 +328,12 @@ bool AsmAnalyzer::operator()(FunctionDefinition const& _funDef)
 
 bool AsmAnalyzer::operator()(FunctionCall const& _funCall)
 {
-	solAssert(!_funCall.functionName.name.empty(), "");
+	yulAssert(!_funCall.functionName.name.empty(), "");
 	bool success = true;
 	size_t parameters = 0;
 	size_t returns = 0;
 	bool needsLiteralArguments = false;
-	if (BuiltinFunction const* f = m_dialect->builtin(_funCall.functionName.name))
+	if (BuiltinFunction const* f = m_dialect.builtin(_funCall.functionName.name))
 	{
 		// TODO: compare types, too
 		parameters = f->parameters.size();
@@ -330,7 +341,7 @@ bool AsmAnalyzer::operator()(FunctionCall const& _funCall)
 		if (f->literalArguments)
 			needsLiteralArguments = true;
 	}
-	else if (!m_currentScope->lookup(_funCall.functionName.name, Scope::Visitor(
+	else if (!m_currentScope->lookup(_funCall.functionName.name, GenericVisitor{
 		[&](Scope::Variable const&)
 		{
 			m_errorReporter.typeError(
@@ -353,7 +364,7 @@ bool AsmAnalyzer::operator()(FunctionCall const& _funCall)
 			parameters = _fun.arguments.size();
 			returns = _fun.returns.size();
 		}
-	)))
+	}))
 	{
 		m_errorReporter.declarationError(_funCall.functionName.location, "Function not found.");
 		success = false;
@@ -375,11 +386,19 @@ bool AsmAnalyzer::operator()(FunctionCall const& _funCall)
 	{
 		if (!expectExpression(arg))
 			success = false;
-		else if (needsLiteralArguments && arg.type() != typeid(Literal))
-			m_errorReporter.typeError(
-				_funCall.functionName.location,
-				"Function expects direct literals as arguments."
-			);
+		else if (needsLiteralArguments)
+		{
+			if (!holds_alternative<Literal>(arg))
+				m_errorReporter.typeError(
+					_funCall.functionName.location,
+					"Function expects direct literals as arguments."
+				);
+			else if (!m_dataNames.count(std::get<Literal>(arg).value))
+				m_errorReporter.typeError(
+					_funCall.functionName.location,
+					"Unknown data object \"" + std::get<Literal>(arg).value.str() + "\"."
+				);
+		}
 	}
 	// Use argument size instead of parameter count to avoid misleading errors.
 	m_stackHeight += int(returns) - int(_funCall.arguments.size());
@@ -391,9 +410,11 @@ bool AsmAnalyzer::operator()(If const& _if)
 {
 	bool success = true;
 
+	int const initialHeight = m_stackHeight;
 	if (!expectExpression(*_if.condition))
 		success = false;
-	m_stackHeight--;
+
+	m_stackHeight = initialHeight;
 
 	if (!(*this)(_if.body))
 		success = false;
@@ -405,14 +426,15 @@ bool AsmAnalyzer::operator()(If const& _if)
 
 bool AsmAnalyzer::operator()(Switch const& _switch)
 {
-	solAssert(_switch.expression, "");
+	yulAssert(_switch.expression, "");
 
 	bool success = true;
 
+	int const initialHeight = m_stackHeight;
 	if (!expectExpression(*_switch.expression))
 		success = false;
 
-	if (m_dialect->flavour == AsmFlavour::Yul)
+	if (m_dialect.flavour == AsmFlavour::Yul)
 	{
 		YulString caseType;
 		bool mismatchingTypes = false;
@@ -434,21 +456,27 @@ bool AsmAnalyzer::operator()(Switch const& _switch)
 			);
 	}
 
-	set<Literal const*, Less<Literal*>> cases;
+	set<u256> cases;
 	for (auto const& _case: _switch.cases)
 	{
 		if (_case.value)
 		{
 			int const initialStackHeight = m_stackHeight;
+			bool isCaseValueValid = true;
 			// We cannot use "expectExpression" here because *_case.value is not a
 			// Statement and would be converted to a Statement otherwise.
 			if (!(*this)(*_case.value))
+			{
+				isCaseValueValid = false;
 				success = false;
+			}
 			expectDeposit(1, initialStackHeight, _case.value->location);
 			m_stackHeight--;
 
+			// If the case value is not valid, we should not insert it into cases.
+			yulAssert(isCaseValueValid || m_errorReporter.hasErrors(), "Invalid case value.");
 			/// Note: the parser ensures there is only one default case
-			if (!cases.insert(_case.value.get()).second)
+			if (isCaseValueValid && !cases.insert(valueOfLiteral(*_case.value)).second)
 			{
 				m_errorReporter.declarationError(
 					_case.location,
@@ -462,7 +490,7 @@ bool AsmAnalyzer::operator()(Switch const& _switch)
 			success = false;
 	}
 
-	m_stackHeight--;
+	m_stackHeight = initialHeight;
 	m_info.stackHeightInfo[&_switch] = m_stackHeight;
 
 	return success;
@@ -470,9 +498,11 @@ bool AsmAnalyzer::operator()(Switch const& _switch)
 
 bool AsmAnalyzer::operator()(ForLoop const& _for)
 {
-	solAssert(_for.condition, "");
+	yulAssert(_for.condition, "");
 
-	Scope* originalScope = m_currentScope;
+	Scope* outerScope = m_currentScope;
+
+	int const initialHeight = m_stackHeight;
 
 	bool success = true;
 	if (!(*this)(_for.pre))
@@ -484,17 +514,37 @@ bool AsmAnalyzer::operator()(ForLoop const& _for)
 
 	if (!expectExpression(*_for.condition))
 		success = false;
+
 	m_stackHeight--;
+
+	// backup outer for-loop & create new state
+	auto outerForLoop = m_currentForLoop;
+	m_currentForLoop = &_for;
+
 	if (!(*this)(_for.body))
 		success = false;
+
 	if (!(*this)(_for.post))
 		success = false;
 
-	m_stackHeight -= scope(&_for.pre).numberOfVariables();
+	m_stackHeight = initialHeight;
 	m_info.stackHeightInfo[&_for] = m_stackHeight;
-	m_currentScope = originalScope;
+	m_currentScope = outerScope;
+	m_currentForLoop = outerForLoop;
 
 	return success;
+}
+
+bool AsmAnalyzer::operator()(Break const& _break)
+{
+	m_info.stackHeightInfo[&_break] = m_stackHeight;
+	return true;
+}
+
+bool AsmAnalyzer::operator()(Continue const& _continue)
+{
+	m_info.stackHeightInfo[&_continue] = m_stackHeight;
+	return true;
 }
 
 bool AsmAnalyzer::operator()(Block const& _block)
@@ -506,7 +556,7 @@ bool AsmAnalyzer::operator()(Block const& _block)
 	int const initialStackHeight = m_stackHeight;
 
 	for (auto const& s: _block.statements)
-		if (!boost::apply_visitor(*this, s))
+		if (!std::visit(*this, s))
 			success = false;
 
 	m_stackHeight -= scope(&_block).numberOfVariables();
@@ -535,7 +585,7 @@ bool AsmAnalyzer::expectExpression(Expression const& _expr)
 {
 	bool success = true;
 	int const initialHeight = m_stackHeight;
-	if (!boost::apply_visitor(*this, _expr))
+	if (!std::visit(*this, _expr))
 		success = false;
 	if (!expectDeposit(1, initialHeight, locationOf(_expr)))
 		success = false;
@@ -559,19 +609,19 @@ bool AsmAnalyzer::expectDeposit(int _deposit, int _oldHeight, SourceLocation con
 
 bool AsmAnalyzer::checkAssignment(Identifier const& _variable, size_t _valueSize)
 {
-	solAssert(!_variable.name.empty(), "");
+	yulAssert(!_variable.name.empty(), "");
 	bool success = true;
 	size_t numErrorsBefore = m_errorReporter.errors().size();
 	size_t variableSize(-1);
 	if (Scope::Identifier const* var = m_currentScope->lookup(_variable.name))
 	{
 		// Check that it is a variable
-		if (var->type() != typeid(Scope::Variable))
+		if (!holds_alternative<Scope::Variable>(*var))
 		{
 			m_errorReporter.typeError(_variable.location, "Assignment requires variable.");
 			success = false;
 		}
-		else if (!m_activeVariables.count(&boost::get<Scope::Variable>(*var)))
+		else if (!m_activeVariables.count(&std::get<Scope::Variable>(*var)))
 		{
 			m_errorReporter.declarationError(
 				_variable.location,
@@ -615,14 +665,14 @@ bool AsmAnalyzer::checkAssignment(Identifier const& _variable, size_t _valueSize
 
 Scope& AsmAnalyzer::scope(Block const* _block)
 {
-	solAssert(m_info.scopes.count(_block) == 1, "Scope requested but not present.");
+	yulAssert(m_info.scopes.count(_block) == 1, "Scope requested but not present.");
 	auto scopePtr = m_info.scopes.at(_block);
-	solAssert(scopePtr, "Scope requested but not present.");
+	yulAssert(scopePtr, "Scope requested but not present.");
 	return *scopePtr;
 }
 void AsmAnalyzer::expectValidType(string const& type, SourceLocation const& _location)
 {
-	if (m_dialect->flavour != AsmFlavour::Yul)
+	if (m_dialect.flavour != AsmFlavour::Yul)
 		return;
 
 	if (!builtinTypes.count(type))
@@ -632,14 +682,14 @@ void AsmAnalyzer::expectValidType(string const& type, SourceLocation const& _loc
 		);
 }
 
-void AsmAnalyzer::warnOnInstructions(solidity::Instruction _instr, SourceLocation const& _location)
+void AsmAnalyzer::warnOnInstructions(dev::eth::Instruction _instr, SourceLocation const& _location)
 {
 	// We assume that returndatacopy, returndatasize and staticcall are either all available
 	// or all not available.
-	solAssert(m_evmVersion.supportsReturndata() == m_evmVersion.hasStaticCall(), "");
+	yulAssert(m_evmVersion.supportsReturndata() == m_evmVersion.hasStaticCall(), "");
 	// Similarly we assume bitwise shifting and create2 go together.
-	solAssert(m_evmVersion.hasBitwiseShifting() == m_evmVersion.hasCreate2(), "");
-	solAssert(m_dialect->flavour != AsmFlavour::Yul, "");
+	yulAssert(m_evmVersion.hasBitwiseShifting() == m_evmVersion.hasCreate2(), "");
+	yulAssert(m_dialect.flavour != AsmFlavour::Yul, "");
 
 	auto errorForVM = [=](string const& vmKindMessage) {
 		m_errorReporter.typeError(
@@ -656,35 +706,47 @@ void AsmAnalyzer::warnOnInstructions(solidity::Instruction _instr, SourceLocatio
 	};
 
 	if ((
-		_instr == solidity::Instruction::RETURNDATACOPY ||
-		_instr == solidity::Instruction::RETURNDATASIZE
+		_instr == dev::eth::Instruction::RETURNDATACOPY ||
+		_instr == dev::eth::Instruction::RETURNDATASIZE
 	) && !m_evmVersion.supportsReturndata())
 	{
 		errorForVM("only available for Byzantium-compatible");
 	}
-	else if (_instr == solidity::Instruction::STATICCALL && !m_evmVersion.hasStaticCall())
+	else if (_instr == dev::eth::Instruction::STATICCALL && !m_evmVersion.hasStaticCall())
 	{
 		errorForVM("only available for Byzantium-compatible");
 	}
 	else if ((
-		_instr == solidity::Instruction::SHL ||
-		_instr == solidity::Instruction::SHR ||
-		_instr == solidity::Instruction::SAR
+		_instr == dev::eth::Instruction::SHL ||
+		_instr == dev::eth::Instruction::SHR ||
+		_instr == dev::eth::Instruction::SAR
 	) && !m_evmVersion.hasBitwiseShifting())
 	{
 		errorForVM("only available for Constantinople-compatible");
 	}
-	else if (_instr == solidity::Instruction::CREATE2 && !m_evmVersion.hasCreate2())
+	else if (_instr == dev::eth::Instruction::CREATE2 && !m_evmVersion.hasCreate2())
 	{
 		errorForVM("only available for Constantinople-compatible");
 	}
-	else if (_instr == solidity::Instruction::EXTCODEHASH && !m_evmVersion.hasExtCodeHash())
+	else if (_instr == dev::eth::Instruction::EXTCODEHASH && !m_evmVersion.hasExtCodeHash())
 	{
 		errorForVM("only available for Constantinople-compatible");
 	}
-	else if (_instr == solidity::Instruction::JUMP || _instr == solidity::Instruction::JUMPI || _instr == solidity::Instruction::JUMPDEST)
+	else if (_instr == dev::eth::Instruction::CHAINID && !m_evmVersion.hasChainID())
 	{
-		if (m_dialect->flavour == AsmFlavour::Loose)
+		errorForVM("only available for Istanbul-compatible");
+	}
+	else if (_instr == dev::eth::Instruction::SELFBALANCE && !m_evmVersion.hasSelfBalance())
+	{
+		errorForVM("only available for Istanbul-compatible");
+	}
+	else if (
+		_instr == dev::eth::Instruction::JUMP ||
+		_instr == dev::eth::Instruction::JUMPI ||
+		_instr == dev::eth::Instruction::JUMPDEST
+	)
+	{
+		if (m_dialect.flavour == AsmFlavour::Loose)
 			m_errorReporter.error(
 				m_errorTypeForLoose ? *m_errorTypeForLoose : Error::Type::Warning,
 				_location,
@@ -705,8 +767,8 @@ void AsmAnalyzer::warnOnInstructions(solidity::Instruction _instr, SourceLocatio
 
 void AsmAnalyzer::checkLooseFeature(SourceLocation const& _location, string const& _description)
 {
-	if (m_dialect->flavour != AsmFlavour::Loose)
-		solAssert(false, _description);
+	if (m_dialect.flavour != AsmFlavour::Loose)
+		yulAssert(false, _description);
 	else if (m_errorTypeForLoose)
 		m_errorReporter.error(*m_errorTypeForLoose, _location, _description);
 }

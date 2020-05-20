@@ -49,27 +49,28 @@ void ReferencesCounter::operator()(Identifier const& _identifier)
 
 void ReferencesCounter::operator()(FunctionCall const& _funCall)
 {
-	++m_references[_funCall.functionName.name];
+	if (m_countWhat == VariablesAndFunctions)
+		++m_references[_funCall.functionName.name];
 	ASTWalker::operator()(_funCall);
 }
 
-map<YulString, size_t> ReferencesCounter::countReferences(Block const& _block)
+map<YulString, size_t> ReferencesCounter::countReferences(Block const& _block, CountWhat _countWhat)
 {
-	ReferencesCounter counter;
+	ReferencesCounter counter(_countWhat);
 	counter(_block);
 	return counter.references();
 }
 
-map<YulString, size_t> ReferencesCounter::countReferences(FunctionDefinition const& _function)
+map<YulString, size_t> ReferencesCounter::countReferences(FunctionDefinition const& _function, CountWhat _countWhat)
 {
-	ReferencesCounter counter;
+	ReferencesCounter counter(_countWhat);
 	counter(_function);
 	return counter.references();
 }
 
-map<YulString, size_t> ReferencesCounter::countReferences(Expression const& _expression)
+map<YulString, size_t> ReferencesCounter::countReferences(Expression const& _expression, CountWhat _countWhat)
 {
-	ReferencesCounter counter;
+	ReferencesCounter counter(_countWhat);
 	counter.visit(_expression);
 	return counter.references();
 }
@@ -78,4 +79,30 @@ void Assignments::operator()(Assignment const& _assignment)
 {
 	for (auto const& var: _assignment.variableNames)
 		m_names.emplace(var.name);
+}
+
+
+void AssignmentsSinceContinue::operator()(ForLoop const& _forLoop)
+{
+	m_forLoopDepth++;
+	ASTWalker::operator()(_forLoop);
+	m_forLoopDepth--;
+}
+
+void AssignmentsSinceContinue::operator()(Continue const&)
+{
+	if (m_forLoopDepth == 0)
+		m_continueFound = true;
+}
+
+void AssignmentsSinceContinue::operator()(Assignment const& _assignment)
+{
+	if (m_continueFound)
+		for (auto const& var: _assignment.variableNames)
+			m_names.emplace(var.name);
+}
+
+void AssignmentsSinceContinue::operator()(FunctionDefinition const&)
+{
+	yulAssert(false, "");
 }

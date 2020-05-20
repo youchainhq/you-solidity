@@ -22,7 +22,7 @@
 
 #include <libyul/optimiser/SimplificationRules.h>
 #include <libyul/optimiser/Semantics.h>
-#include <libyul/optimiser/SSAValueTracker.h>
+#include <libyul/optimiser/OptimiserStep.h>
 #include <libyul/AsmData.h>
 
 #include <libdevcore/CommonData.h>
@@ -30,8 +30,11 @@
 using namespace std;
 using namespace dev;
 using namespace yul;
-using namespace dev::solidity;
 
+void ExpressionSimplifier::run(OptimiserStepContext& _context, Block& _ast)
+{
+	ExpressionSimplifier{_context.dialect}(_ast);
+}
 
 void ExpressionSimplifier::visit(Expression& _expression)
 {
@@ -45,13 +48,8 @@ void ExpressionSimplifier::visit(Expression& _expression)
 		// so if the value of the variable is not movable, the expression that references
 		// the variable still is.
 
-		if (match->removesNonConstants && !MovableChecker(m_dialect, _expression).movable())
+		if (match->removesNonConstants && !SideEffectsCollector(m_dialect, _expression).movable())
 			return;
 		_expression = match->action().toExpression(locationOf(_expression));
 	}
-}
-
-void ExpressionSimplifier::run(Dialect const& _dialect, Block& _ast)
-{
-	ExpressionSimplifier{_dialect}(_ast);
 }

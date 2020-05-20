@@ -18,11 +18,9 @@
 #pragma once
 
 #include <test/libsolidity/AnalysisFramework.h>
-#include <test/libsolidity/FormattedScope.h>
-#include <libsolidity/interface/Exceptions.h>
-
-#include <boost/noncopyable.hpp>
-#include <boost/test/unit_test.hpp>
+#include <test/TestCase.h>
+#include <liblangutil/Exceptions.h>
+#include <libdevcore/AnsiColorized.h>
 
 #include <iosfwd>
 #include <string>
@@ -40,50 +38,61 @@ struct SyntaxTestError
 {
 	std::string type;
 	std::string message;
+	std::string sourceName;
 	int locationStart;
 	int locationEnd;
 	bool operator==(SyntaxTestError const& _rhs) const
 	{
 		return type == _rhs.type &&
 			message == _rhs.message &&
+			sourceName == _rhs.sourceName &&
 			locationStart == _rhs.locationStart &&
 			locationEnd == _rhs.locationEnd;
 	}
 };
 
 
-class SyntaxTest: AnalysisFramework
+class SyntaxTest: AnalysisFramework, public EVMVersionRestrictedTestCase
 {
 public:
-	SyntaxTest(std::string const& _filename);
+	static std::unique_ptr<TestCase> create(Config const& _config)
+	{
+		return std::make_unique<SyntaxTest>(_config.filename, _config.evmVersion, false);
+	}
+	static std::unique_ptr<TestCase> createErrorRecovery(Config const& _config)
+	{
+		return std::make_unique<SyntaxTest>(_config.filename, _config.evmVersion, true);
+	}
+	SyntaxTest(std::string const& _filename, langutil::EVMVersion _evmVersion, bool _parserErrorRecovery = false);
 
-	bool run(std::ostream& _stream, std::string const& _linePrefix = "", bool const _formatted = false);
+	TestResult run(std::ostream& _stream, std::string const& _linePrefix = "", bool _formatted = false) override;
 
-	std::vector<SyntaxTestError> const& expectations() const { return m_expectations; }
-	std::string const& source() const { return m_source; }
-	std::vector<SyntaxTestError> const& errorList() const { return m_errorList; }
+	void printSource(std::ostream &_stream, std::string const &_linePrefix = "", bool _formatted = false) const override;
+	void printUpdatedExpectations(std::ostream& _stream, std::string const& _linePrefix) const override
+	{
+		if (!m_errorList.empty())
+			printErrorList(_stream, m_errorList, _linePrefix, false);
+	}
 
+	static std::string errorMessage(Exception const& _e);
+protected:
 	static void printErrorList(
 		std::ostream& _stream,
 		std::vector<SyntaxTestError> const& _errors,
 		std::string const& _linePrefix,
-		bool const _formatted = false
+		bool _formatted = false
 	);
 
-	static int registerTests(
-		boost::unit_test::test_suite& _suite,
-		boost::filesystem::path const& _basepath,
-		boost::filesystem::path const& _path
-	);
-	static bool isTestFilename(boost::filesystem::path const& _filename);
-	static std::string errorMessage(Exception const& _e);
-private:
-	static std::string parseSource(std::istream& _stream);
+	virtual bool printExpectationAndError(std::ostream& _stream, std::string const& _linePrefix = "", bool _formatted = false);
+
 	static std::vector<SyntaxTestError> parseExpectations(std::istream& _stream);
 
-	std::string m_source;
+	std::map<std::string, std::string> m_sources;
 	std::vector<SyntaxTestError> m_expectations;
 	std::vector<SyntaxTestError> m_errorList;
+	bool m_optimiseYul = false;
+	langutil::EVMVersion const m_evmVersion;
+	bool m_parserErrorRecovery = false;
 };
 
 }

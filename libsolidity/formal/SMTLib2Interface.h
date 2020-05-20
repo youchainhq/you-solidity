@@ -19,17 +19,17 @@
 
 #include <libsolidity/formal/SolverInterface.h>
 
-#include <libsolidity/interface/Exceptions.h>
 #include <libsolidity/interface/ReadFile.h>
-
+#include <liblangutil/Exceptions.h>
 #include <libdevcore/Common.h>
+#include <libdevcore/FixedHash.h>
 
 #include <boost/noncopyable.hpp>
-
+#include <cstdio>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
-#include <cstdio>
 
 namespace dev
 {
@@ -41,33 +41,43 @@ namespace smt
 class SMTLib2Interface: public SolverInterface, public boost::noncopyable
 {
 public:
-	explicit SMTLib2Interface(ReadCallback::Callback const& _queryCallback);
+	explicit SMTLib2Interface(std::map<h256, std::string> const& _queryResponses);
 
 	void reset() override;
 
 	void push() override;
 	void pop() override;
 
-	Expression newFunction(std::string _name, Sort _domain, Sort _codomain) override;
-	Expression newInteger(std::string _name) override;
-	Expression newBool(std::string _name) override;
+	void declareVariable(std::string const&, SortPointer const&) override;
 
-	void addAssertion(Expression const& _expr) override;
-	std::pair<CheckResult, std::vector<std::string>> check(std::vector<Expression> const& _expressionsToEvaluate) override;
+	void addAssertion(smt::Expression const& _expr) override;
+	std::pair<CheckResult, std::vector<std::string>> check(std::vector<smt::Expression> const& _expressionsToEvaluate) override;
+
+	std::vector<std::string> unhandledQueries() override { return m_unhandledQueries; }
+
+	// Used by CHCSmtLib2Interface
+	std::string toSExpr(smt::Expression const& _expr);
+	std::string toSmtLibSort(Sort const& _sort);
+	std::string toSmtLibSort(std::vector<SortPointer> const& _sort);
+
+	std::map<std::string, SortPointer> variables() { return m_variables; }
 
 private:
-	std::string toSExpr(Expression const& _expr);
+	void declareFunction(std::string const& _name, SortPointer const& _sort);
 
 	void write(std::string _data);
 
-	std::string checkSatAndGetValuesCommand(std::vector<Expression> const& _expressionsToEvaluate);
+	std::string checkSatAndGetValuesCommand(std::vector<smt::Expression> const& _expressionsToEvaluate);
 	std::vector<std::string> parseValues(std::string::const_iterator _start, std::string::const_iterator _end);
 
 	/// Communicates with the solver via the callback. Throws SMTSolverError on error.
 	std::string querySolver(std::string const& _input);
 
-	ReadCallback::Callback m_queryCallback;
 	std::vector<std::string> m_accumulatedOutput;
+	std::map<std::string, SortPointer> m_variables;
+
+	std::map<h256, std::string> const& m_queryResponses;
+	std::vector<std::string> m_unhandledQueries;
 };
 
 }

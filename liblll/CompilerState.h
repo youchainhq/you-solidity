@@ -21,12 +21,12 @@
 
 #pragma once
 
+#include <liblll/CodeFragment.h>
 #include <boost/spirit/include/support_utree.hpp>
-#include "CodeFragment.h"
 
 namespace dev
 {
-namespace eth
+namespace lll
 {
 
 struct Macro

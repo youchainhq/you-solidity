@@ -6,12 +6,15 @@ set(sources
 	ErrorReporter.cpp
 	ErrorReporter.h
 	EVMVersion.h
+	EVMVersion.cpp
 	Exceptions.cpp
 	Exceptions.h
 	ParserBase.cpp
 	ParserBase.h
 	Scanner.cpp
 	Scanner.h
+	SemVerHandler.cpp
+	SemVerHandler.h
 	SourceLocation.h
 	SourceReferenceExtractor.cpp
 	SourceReferenceExtractor.h

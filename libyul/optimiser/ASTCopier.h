@@ -24,17 +24,15 @@
 
 #include <libyul/YulString.h>
 
-#include <boost/variant.hpp>
-#include <boost/optional.hpp>
-
-#include <vector>
-#include <set>
 #include <memory>
+#include <optional>
+#include <set>
+#include <vector>
 
 namespace yul
 {
 
-class ExpressionCopier: public boost::static_visitor<Expression>
+class ExpressionCopier
 {
 public:
 	virtual ~ExpressionCopier() = default;
@@ -44,7 +42,7 @@ public:
 	virtual Expression operator()(FunctionCall const&) = 0;
 };
 
-class StatementCopier: public boost::static_visitor<Statement>
+class StatementCopier
 {
 public:
 	virtual ~StatementCopier() = default;
@@ -58,6 +56,8 @@ public:
 	virtual Statement operator()(Switch const& _switch) = 0;
 	virtual Statement operator()(FunctionDefinition const&) = 0;
 	virtual Statement operator()(ForLoop const&) = 0;
+	virtual Statement operator()(Break const&) = 0;
+	virtual Statement operator()(Continue const&) = 0;
 	virtual Statement operator()(Block const& _block) = 0;
 };
 
@@ -83,6 +83,8 @@ public:
 	Statement operator()(Switch const& _switch) override;
 	Statement operator()(FunctionDefinition const&) override;
 	Statement operator()(ForLoop const&) override;
+	Statement operator()(Break const&) override;
+	Statement operator()(Continue const&) override;
 	Statement operator()(Block const& _block) override;
 
 	virtual Expression translate(Expression const& _expression);
@@ -100,7 +102,7 @@ protected:
 
 	Block translate(Block const& _block);
 	Case translate(Case const& _case);
-	Identifier translate(Identifier const& _identifier);
+	virtual Identifier translate(Identifier const& _identifier);
 	Literal translate(Literal const& _literal);
 	TypedName translate(TypedName const& _typedName);
 

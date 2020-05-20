@@ -29,17 +29,17 @@ void VarDeclInitializer::operator()(Block& _block)
 {
 	ASTModifier::operator()(_block);
 
-	static Expression const zero{Literal{{}, LiteralKind::Number, YulString{"0"}, {}}};
-
-	using OptionalStatements = boost::optional<vector<Statement>>;
-	GenericFallbackReturnsVisitor<OptionalStatements, VariableDeclaration> visitor{
+	using OptionalStatements = std::optional<vector<Statement>>;
+	GenericVisitor visitor{
+		VisitorFallback<OptionalStatements>{},
 		[](VariableDeclaration& _varDecl) -> OptionalStatements
 		{
 			if (_varDecl.value)
 				return {};
-			else if (_varDecl.variables.size() == 1)
+			Literal zero{{}, LiteralKind::Number, YulString{"0"}, {}};
+			if (_varDecl.variables.size() == 1)
 			{
-				_varDecl.value = make_unique<Expression>(zero);
+				_varDecl.value = make_unique<Expression>(std::move(zero));
 				return {};
 			}
 			else
@@ -47,10 +47,11 @@ void VarDeclInitializer::operator()(Block& _block)
 				OptionalStatements ret{vector<Statement>{}};
 				langutil::SourceLocation loc{std::move(_varDecl.location)};
 				for (auto& var: _varDecl.variables)
-					ret->push_back(VariableDeclaration{loc, {std::move(var)}, make_unique<Expression>(zero)});
+					ret->emplace_back(VariableDeclaration{loc, {std::move(var)}, make_unique<Expression>(zero)});
 				return ret;
 			}
 		}
 	};
-	iterateReplacing(_block.statements, boost::apply_visitor(visitor));
+
+	iterateReplacing(_block.statements, [&](auto&& _statement) { return std::visit(visitor, _statement); });
 }

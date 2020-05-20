@@ -35,7 +35,9 @@ namespace eth
  */
 struct LinkerObject
 {
+	/// The bytecode.
 	bytes bytecode;
+
 	/// Map from offsets in bytecode to library identifiers. The addresses starting at those offsets
 	/// need to be replaced by the actual addresses by the linker.
 	std::map<size_t, std::string> linkReferences;
@@ -47,8 +49,13 @@ struct LinkerObject
 	void link(std::map<std::string, h160> const& _libraryAddresses);
 
 	/// @returns a hex representation of the bytecode of the given object, replacing unlinked
-	/// addresses by placeholders.
+	/// addresses by placeholders. This output is lowercase.
 	std::string toHex() const;
+
+	/// @returns a 36 character string that is used as a placeholder for the library
+	/// address (enclosed by `__` on both sides). The placeholder is the hex representation
+	/// of the first 18 bytes of the keccak-256 hash of @a _libraryName.
+	static std::string libraryPlaceholder(std::string const& _libraryName);
 
 private:
 	static h160 const* matchLibrary(

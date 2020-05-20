@@ -21,7 +21,7 @@
  * String routines
  */
 
-#include "StringUtils.h"
+#include <libdevcore/StringUtils.h>
 #include <algorithm>
 #include <string>
 #include <vector>
@@ -29,13 +29,16 @@
 using namespace std;
 using namespace dev;
 
-bool dev::stringWithinDistance(string const& _str1, string const& _str2, size_t _maxDistance)
+bool dev::stringWithinDistance(string const& _str1, string const& _str2, size_t _maxDistance, size_t _lenThreshold)
 {
 	if (_str1 == _str2)
 		return true;
 
 	size_t n1 = _str1.size();
 	size_t n2 = _str2.size();
+	if (_lenThreshold > 0 && n1 * n2 > _lenThreshold)
+		return false;
+
 	size_t distance = stringDistance(_str1, _str2);
 
 	// if distance is not greater than _maxDistance, and distance is strictly less than length of both names, they can be considered similar
@@ -85,17 +88,28 @@ size_t dev::stringDistance(string const& _str1, string const& _str2)
 
 string dev::quotedAlternativesList(vector<string> const& suggestions)
 {
-	if (suggestions.empty())
-		return "";
-	if (suggestions.size() == 1)
-		return "\"" + suggestions.front() + "\"";
+	vector<string> quotedSuggestions;
 
-	string choices = "\"" + suggestions.front() + "\"";
-	for (size_t i = 1; i + 1 < suggestions.size(); ++i)
-		choices += ", \"" + suggestions[i] + "\"";
+	for (auto& suggestion: suggestions)
+		quotedSuggestions.emplace_back("\"" + suggestion + "\"");
 
-	choices += " or \"" + suggestions.back() + "\"";
-
-	return choices;
+	return joinHumanReadable(quotedSuggestions, ", ", " or ");
 }
 
+string dev::suffixedVariableNameList(string const& _baseName, size_t _startSuffix, size_t _endSuffix)
+{
+	string result;
+	if (_startSuffix < _endSuffix)
+	{
+		result = _baseName + to_string(_startSuffix++);
+		while (_startSuffix < _endSuffix)
+			result += ", " + _baseName + to_string(_startSuffix++);
+	}
+	else if (_endSuffix < _startSuffix)
+	{
+		result = _baseName + to_string(_endSuffix++);
+		while (_endSuffix < _startSuffix)
+			result = _baseName + to_string(_endSuffix++) + ", " + result;
+	}
+	return result;
+}
